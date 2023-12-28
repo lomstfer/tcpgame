@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "ES2016",
+    "moduleResolution": "Node",
+    "esModuleInterop": true,
+    "composite": true,
+    "outDir": "../../dist/server",
+    "strict": true,
+  },
+  "references": [{ "path": "../shared" }]
+}

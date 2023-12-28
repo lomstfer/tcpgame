@@ -1,0 +1,8 @@
+{
+    "watch": [
+        "src/client/"
+    ],
+    "ignore": ["node_modules"],
+    "exec": "npm start || exit 1",
+    "ext": "ts"
+}

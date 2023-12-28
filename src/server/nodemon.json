@@ -1,0 +1,9 @@
+{
+    "watch": [
+        "src/server/",
+        "src/shared/"
+    ],
+    "ignore": ["node_modules"],
+    "exec": "tsc --build src/server && tsc --build src/shared && node dist/server/main.js || exit 1",
+    "ext": "ts"
+}

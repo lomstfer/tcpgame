@@ -1,0 +1,9 @@
+{
+    "watch": [
+        "src/client/",
+        "src/shared/"
+    ],
+    "ignore": ["node_modules"],
+    "exec": "tsc --build src/client && tsc --build src/shared && webpack || exit 1",
+    "ext": "ts"
+}

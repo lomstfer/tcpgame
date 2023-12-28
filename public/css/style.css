@@ -1,0 +1,74 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    --scale: calc((1vw + 1vh)/2);
+    user-select: none;
+}
+
+body {
+    overflow: hidden;
+}
+
+#background {
+    position: absolute;
+    background: url("../img/bg.jpg");
+    background-size: cover;
+    background-position: center center;
+    width: 100vw;
+    height: 100vh;
+}
+
+#find-match-inputs {
+    position: absolute;
+    top: calc(var(--scale) * 5);
+    left: calc(var(--scale) * 5);
+    width: calc(var(--scale) * 10);
+    height: calc(var(--scale) * 5);
+    display: none;
+}
+
+#versus-text {
+    position: absolute;
+    right: calc(var(--scale) * 5);
+    top: calc(var(--scale) * 5);
+    font-size: calc(var(--scale) * 4);
+}
+
+#inventory-parent {
+    overflow: hidden;
+    position: absolute;
+    bottom: 0;
+    width: 100vw;
+    height: fit-content;
+    display: flex;
+    justify-content: center;
+
+    pointer-events: none;
+}
+
+#inventory {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: calc(var(--scale) * 1);
+    align-items: center;
+    font-size: calc(var(--scale) * 2);
+    gap: calc(var(--scale));
+}
+
+#inventory-slots {
+    display: flex;
+    flex-direction: row;
+    gap: calc(var(--scale) * 1);
+    justify-self: center;
+    align-self: center;
+    width: fit-content;
+}
+
+.item-slot {
+    width: calc(var(--scale) * 5);
+    height: calc(var(--scale) * 5);
+    border-radius: calc(var(--scale) * 1);
+    background-color: rgba(29, 29, 29, 0.836);
+    pointer-events: all;
+}

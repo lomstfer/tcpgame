@@ -1,0 +1,1 @@
+* encrypt id:s before sending them to client so that they cant "impersonate". decrypt when they do stuff
