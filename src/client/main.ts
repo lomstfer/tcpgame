@@ -5,7 +5,7 @@ import * as CONSTS from "../shared/constants.js"
 import * as UTILS from "../shared/utils.js"
 import { ClientInfo } from "../shared/clientInfo.js"
 
-const websocket = new WebSocket("ws://151.177.152.49:80")
+const websocket = new WebSocket("ws://83.253.223.167:80")
 NET.handleNetworking(websocket)
 
 let name = ""
@@ -15,19 +15,21 @@ NET.netEventEmitter.on("allowFindMatch", allow => {
     if (findMatchForm) {
         findMatchForm.style.display = allow ? "initial" : "none"
     }
+    const timeEl = document.getElementById("time")!
+    pixiApp.ticker.add(() => {
+        timeEl.textContent = NET.getServerTime().toFixed(1)
+    })
 })
 
-const findMatchButton = document.getElementById("find-match-button") as HTMLButtonElement
-if (findMatchButton) {
-    findMatchButton.addEventListener("click", () => {
-        const nameInput = document.getElementById("find-match-name") as HTMLInputElement
-        if (!nameInput) {
-            return
-        }
-        name = nameInput.value
-        NET.findMatch(websocket, nameInput.value)
-    })
-}
+const findMatchButton = document.getElementById("find-match-button")
+findMatchButton?.addEventListener("click", () => {
+    const nameInput = document.getElementById("find-match-name") as HTMLInputElement
+    if (!nameInput) {
+        return
+    }
+    name = nameInput.value
+    NET.findMatch(websocket, nameInput.value)
+})
 
 const versusText = document.getElementById("versus-text")
 NET.netEventEmitter.on("foundMatch", data => {
@@ -36,15 +38,16 @@ NET.netEventEmitter.on("foundMatch", data => {
     }
 })
 
-// const app = new PIXI.Application<HTMLCanvasElement>({
-//     background: '#335935',
-//     width: CONSTS.GAME_WIDTH,
-//     height: CONSTS.GAME_HEIGHT,
-//     resizeTo: window,
-//     antialias: true,
-//     backgroundAlpha: 1,
-//     eventMode: "static"
-// })
+const pixiApp = new PIXI.Application<HTMLCanvasElement>({
+    background: '#335935',
+    width: CONSTS.GAME_WIDTH,
+    height: CONSTS.GAME_HEIGHT,
+    resizeTo: window,
+    antialias: true,
+    backgroundAlpha: 1,
+    eventMode: "static"
+})
+
 
 // // document.body.appendChild(app.view)
 

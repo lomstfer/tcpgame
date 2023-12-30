@@ -7,6 +7,7 @@ import * as CONSTS from "../shared/constants.js"
 import * as UTILS from "../shared/utils.js"
 import { Item } from "../shared/item.js"
 import { MatchData } from "../shared/matchData.js"
+import { ServerTimeSyncer } from "./serverTimeSyncer.js"
 
 type netEvents = {
     allowFindMatch: boolean,
@@ -14,7 +15,8 @@ type netEvents = {
 }
 
 export const netEventEmitter = mitt<netEvents>()
-export let selfInfo: ClientInfo | undefined = undefined
+
+const serverTimeSyncer = new ServerTimeSyncer()
 
 export function handleNetworking(ws: WebSocket) {
     let inMatch = false
@@ -27,14 +29,27 @@ export function handleNetworking(ws: WebSocket) {
 
         switch (messageID) {
             case MSG.MessageID.serverConnectionAck: {
-                netEventEmitter.emit("allowFindMatch", true)
+                const timeSyncInterval = setInterval(() => {
+                    if (serverTimeSyncer.timeSynced) {
+                        clearInterval(timeSyncInterval)
+                        netEventEmitter.emit("allowFindMatch", true)
+                        return
+                    }
+                    sendServerTimeRequest(ws)
+                }, 200)
+                break
+            }
+            case MSG.MessageID.serverTimeAnswer: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerTimeAnswer>(bytes)
+                serverTimeSyncer.handleServerTimeUpdate(msgObj.clientTime, msgObj.serverTime)
                 break
             }
             case MSG.MessageID.serverFoundMatch: {
-                let obj = MSG.getObjectFromBytes<MSGOBJS.ServerFoundMatch>(bytes)
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerFoundMatch>(bytes)
                 inMatch = true
                 console.log("found match")
-                netEventEmitter.emit("foundMatch", obj.data)
+                
+                netEventEmitter.emit("foundMatch", msgObj.data)
                 break
             }
         }
@@ -46,4 +61,14 @@ export function findMatch(ws: WebSocket, name: string) {
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientEnterMatchFinder, msgObj)
     ws.send(bytes)
     netEventEmitter.emit("allowFindMatch", false)
+}
+
+export function getServerTime(): number {
+    return serverTimeSyncer.getServerTime()
+}
+
+function sendServerTimeRequest(ws: WebSocket) {
+    const obj = new MSGOBJS.ClientTimeRequest(Date.now())
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientTimeRequest, obj)
+    ws.send(bytes)
 }

@@ -15,3 +15,19 @@ export class ServerFoundMatch {
         this.data = data
     }
 }
+
+export class ClientTimeRequest {
+    clientTime: number
+    constructor(clientTime: number) {
+        this.clientTime = clientTime
+    }
+}
+
+export class ServerTimeAnswer {
+    clientTime: number
+    serverTime: number
+    constructor(clientTime: number, serverTime: number) {
+        this.clientTime = clientTime
+        this.serverTime = serverTime
+    }
+}

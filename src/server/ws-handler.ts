@@ -12,6 +12,8 @@ import { MatchData } from "../shared/matchData.js"
 
 const generalUpdateInterval = 1000 / 5
 
+const startTime = Date.now()
+
 export function handleWS(server: Server) {
     let sockets = new Map<string, WebSocket>()
     let clientsInMatchFinder: Map<string, ClientInfo> = new Map<string, ClientInfo>()
@@ -29,10 +31,17 @@ export function handleWS(server: Server) {
         newSock.on('error', console.error)
 
         newSock.on('message', async (data) => {
-            let bytes = new Uint8Array(data as ArrayBuffer)
-            let messageID = MSG.getMessageIDFromBytes(bytes)
+            const bytes = new Uint8Array(data as ArrayBuffer)
+            const messageID = MSG.getMessageIDFromBytes(bytes)
 
             switch (messageID) {
+                case MSG.MessageID.clientTimeRequest: {
+                    const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientTimeRequest>(bytes)
+                    const answerObj = new MSGOBJS.ServerTimeAnswer(msgObj.clientTime, Date.now() - startTime)
+                    const answerBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverTimeAnswer, answerObj)
+                    newSock.send(answerBytes)
+                    break
+                }
                 case MSG.MessageID.clientEnterMatchFinder: {
                     console.log("clientEnterMatchFinder")
                     const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientEnterMatchFinder>(bytes)
@@ -40,6 +49,7 @@ export function handleWS(server: Server) {
                         break
                     }
                     addClientToMatchFinder((newSock as any).id, msgObj.info, clientsInMatchFinder)
+                    break
                 }
             }
         })
@@ -58,8 +68,9 @@ export function handleWS(server: Server) {
         })
     })
 
-    worldUpdateLoop(ongoingMatches)
     matchmakeLoop(sockets, clientsInMatchFinder, ongoingMatches)
+    worldUpdateLoop(ongoingMatches)
+    sendUpdateLoop()
 }
 
 function handleNewClient(
@@ -185,7 +196,7 @@ async function worldUpdateLoop(
         for (const [id, match] of matches) {
             match.simulate(CONSTS.WORLD_UPDATE_MS)
         }
-
+        console.log(Date.now() - startTime)
         await new Promise(r => setTimeout(r, CONSTS.WORLD_UPDATE_MS))
     }
 }

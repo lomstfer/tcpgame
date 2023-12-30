@@ -10,6 +10,13 @@ body {
     overflow: hidden;
 }
 
+#time {
+    position: absolute;
+    left: calc(var(--scale) * 5);
+    bottom: calc(var(--scale) * 5);
+    font-size: calc(var(--scale) * 8);
+}
+
 #background {
     position: absolute;
     background: url("../img/bg.jpg");

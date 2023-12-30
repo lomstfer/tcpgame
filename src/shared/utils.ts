@@ -1,5 +1,30 @@
 import * as PIXI from "pixi.js"
 
+export function getAverage(array: any[]) {
+    let sum = 0
+    for (const v of array) {
+        sum += v
+    }
+    return sum / array.length
+}
+
+export function getMedian(sortedArray: any[]) {
+    if (sortedArray.length % 2 == 0) {
+        const first = sortedArray[sortedArray.length / 2 - 1]
+        const second = sortedArray[sortedArray.length / 2]
+        return (first + second) / 2
+    }
+    return sortedArray[Math.floor(sortedArray.length / 2)]
+}
+
+export function getAverageDiffFromMedian(sortedArray: number[], median: number) {
+    let sum = 0
+    for (const n of sortedArray) {
+        sum += Math.abs(n - median)
+    }
+    const average = sum / sortedArray.length
+    return average
+}
 
 export function prependUint8(byte: number, array: Uint8Array): Uint8Array {
     let result = new Uint8Array(array.length + 1)

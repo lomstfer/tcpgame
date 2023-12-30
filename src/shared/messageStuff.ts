@@ -6,7 +6,9 @@ import { prependUint8 } from "../shared/utils.js"
 export enum MessageID {
     serverConnectionAck,
     clientEnterMatchFinder,
-    serverFoundMatch
+    serverFoundMatch,
+    clientTimeRequest,
+    serverTimeAnswer,
 }
 
 export function getByteFromMessage(messageID: MessageID): Uint8Array {

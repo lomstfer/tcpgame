@@ -1,5 +1,6 @@
 import { WebSocket } from 'ws'
 import { ClientInfo } from "../shared/clientInfo.js"
+import { Vec2 } from '../shared/utils.js'
 
 export class WebSocketWithId {
     socket: WebSocket
