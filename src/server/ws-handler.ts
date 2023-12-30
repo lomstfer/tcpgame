@@ -13,6 +13,9 @@ import { MatchData } from "../shared/matchData.js"
 const generalUpdateInterval = 1000 / 5
 
 const startTime = Date.now()
+function getElapsedTime() {
+    return Date.now() - startTime
+}
 
 export function handleWS(server: Server) {
     let sockets = new Map<string, WebSocket>()
@@ -37,7 +40,7 @@ export function handleWS(server: Server) {
             switch (messageID) {
                 case MSG.MessageID.clientTimeRequest: {
                     const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientTimeRequest>(bytes)
-                    const answerObj = new MSGOBJS.ServerTimeAnswer(msgObj.clientTime, Date.now() - startTime)
+                    const answerObj = new MSGOBJS.ServerTimeAnswer(msgObj.clientTime, getElapsedTime())
                     const answerBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverTimeAnswer, answerObj)
                     newSock.send(answerBytes)
                     break
@@ -124,10 +127,11 @@ async function matchmakeLoop(
 
         for (let m of newMatches) {
             m.ready()
-
-            const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info))
+            
+            const timeNow = getElapsedTime()
+            const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow))
             m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo1))
-            const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info))
+            const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, timeNow))
             m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo2))
 
             ongoingMatches.set(m.id, m)
@@ -196,7 +200,7 @@ async function worldUpdateLoop(
         for (const [id, match] of matches) {
             match.simulate(CONSTS.WORLD_UPDATE_MS)
         }
-        console.log(Date.now() - startTime)
+        console.log(getElapsedTime())
         await new Promise(r => setTimeout(r, CONSTS.WORLD_UPDATE_MS))
     }
 }

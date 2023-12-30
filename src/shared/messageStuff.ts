@@ -9,6 +9,7 @@ export enum MessageID {
     serverFoundMatch,
     clientTimeRequest,
     serverTimeAnswer,
+    serverOpponentDisconnected,
 }
 
 export function getByteFromMessage(messageID: MessageID): Uint8Array {

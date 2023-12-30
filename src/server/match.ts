@@ -1,6 +1,7 @@
 import { WebSocket } from 'ws'
 import { ClientInfo } from "../shared/clientInfo.js"
 import { Vec2 } from '../shared/utils.js'
+import * as MSG from "../shared/messageStuff.js"
 
 export class WebSocketWithId {
     socket: WebSocket
@@ -33,10 +34,14 @@ export class Match {
     }
 
     disconnectClient(id: string) {
-        if (id == this.client1Socket.id)
+        if (id == this.client1Socket.id) {
             console.log(this.client1Info.name, "disconnected")
-        else if (id == this.client2Socket.id)
+            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageID.serverOpponentDisconnected))
+        }
+        else if (id == this.client2Socket.id) {
             console.log(this.client2Info.name, "disconnected")
+            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageID.serverOpponentDisconnected))
+        }
     }
 
     ready() {

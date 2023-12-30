@@ -2,7 +2,7 @@ import * as UTILS from "../shared/utils.js"
 
 export class ServerTimeSyncer {
     latencyArray: number[] = []
-    clientServerTimeDiff = 0
+    clientServerTimeDiff = Date.now()
     timeSynced = false
 
     handleServerTimeUpdate(clientTime: number, serverTime: number) {

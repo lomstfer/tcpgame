@@ -31,3 +31,7 @@ export class ServerTimeAnswer {
         this.serverTime = serverTime
     }
 }
+
+/* export class ServerOpponentDisconnected {
+
+} */

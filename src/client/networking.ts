@@ -12,14 +12,15 @@ import { ServerTimeSyncer } from "./serverTimeSyncer.js"
 type netEvents = {
     allowFindMatch: boolean,
     foundMatch: MatchData,
+    matchWon: undefined
 }
 
 export const netEventEmitter = mitt<netEvents>()
 
 const serverTimeSyncer = new ServerTimeSyncer()
+let currentMatchData: MatchData | undefined = undefined
 
 export function handleNetworking(ws: WebSocket) {
-    let inMatch = false
 
     ws.onmessage = async function (e) {
         const arrbuf: ArrayBuffer = await e.data.arrayBuffer()
@@ -46,10 +47,14 @@ export function handleNetworking(ws: WebSocket) {
             }
             case MSG.MessageID.serverFoundMatch: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerFoundMatch>(bytes)
-                inMatch = true
+                currentMatchData = msgObj.data
                 console.log("found match")
                 
                 netEventEmitter.emit("foundMatch", msgObj.data)
+                break
+            }
+            case MSG.MessageID.serverOpponentDisconnected: {                
+                netEventEmitter.emit("matchWon")
                 break
             }
         }
@@ -65,6 +70,13 @@ export function findMatch(ws: WebSocket, name: string) {
 
 export function getServerTime(): number {
     return serverTimeSyncer.getServerTime()
+}
+
+export function getMatchTime(): number {
+    if (currentMatchData) {
+        return serverTimeSyncer.getServerTime() - currentMatchData.timeStarted
+    }
+    return 0
 }
 
 function sendServerTimeRequest(ws: WebSocket) {

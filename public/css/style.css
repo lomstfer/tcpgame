@@ -10,6 +10,10 @@ body {
     overflow: hidden;
 }
 
+#game-ui {
+    display: none;
+}
+
 #time {
     position: absolute;
     left: calc(var(--scale) * 5);
