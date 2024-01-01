@@ -44,6 +44,11 @@ export class Match {
         }
     }
 
+    sendBytesToAll(bytes: Uint8Array) {
+        this.client1Socket.socket.send(bytes)
+        this.client2Socket.socket.send(bytes)
+    }
+
     ready() {
         
     }

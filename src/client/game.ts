@@ -2,12 +2,22 @@ import * as PIXI from "pixi.js"
 import * as GUTILS from "./gameUtils.js"
 import * as UTILS from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
-import * as SHADERS from "./shaders.js"
 import { Vec2 } from "../shared/utils.js"
 import { MatchData } from "../shared/matchData.js"
+import { UnitSelection } from "./unitSelection.js"
+import { Grid } from "./grid.js"
+import mitt from "mitt" // events
+import { KeyInput } from "./keyInput.js"
 
-export class MatchVisualizer {
-    private worldRoot: PIXI.Container | undefined = undefined
+type gameEvents = {
+    spawnUnitCommand: Vec2
+}
+export const gameEventEmitter = mitt<gameEvents>()
+
+export class GameInstance {
+    private appStage: PIXI.Container<PIXI.DisplayObject>
+
+    private worldRoot: PIXI.Container
     private elapsedTime = 0
 
     private cameraTargetPosition = new Vec2(0, 0)
@@ -16,39 +26,45 @@ export class MatchVisualizer {
     private cameraSpeed = 200
 
     private moveToPosition: Vec2 | undefined = undefined
-    private mousePosition = new Vec2(0, 0)
-    private mouseDownPosition = new Vec2(0, 0)
     private mouseDown = false
+    private mouseWorldPosition = new Vec2(0, 0)
+    private mouseCanvasPosition = new Vec2(0, 0)
 
-    private grid: PIXI.Sprite
-    private gridFilter: PIXI.Filter
-    private lastGridPosition: Vec2 = new Vec2(0, 0)
+    private unitSelection = new UnitSelection()
+    private grid = new Grid()
 
-    private unitSelection: PIXI.Sprite
+    constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
+        this.appStage = appStage
 
-    constructor() {
-        this.grid = PIXI.Sprite.from('public/img/pixel.jpg')
-        this.grid.width = CONSTS.GAME_WIDTH
-        this.grid.height = CONSTS.GAME_HEIGHT
-        this.grid.x = 0
-        this.grid.y = 0
+        this.worldRoot = new PIXI.Container()
+        {
+            this.worldRoot.x = CONSTS.GAME_WIDTH / 2
+            this.worldRoot.y = CONSTS.GAME_HEIGHT / 2
+            this.worldRoot.sortableChildren = true
+            this.appStage.addChild(this.worldRoot)
+        }
 
-        this.gridFilter = new PIXI.Filter(undefined, SHADERS.gridFragShader)
-        this.gridFilter.autoFit = false
-        this.grid.filters = [this.gridFilter]
-        this.gridFilter.uniforms.uSize = new PIXI.Point(this.grid.width, this.grid.height)
-        this.gridFilter.uniforms.uWorldPosition = new PIXI.Point(this.grid.x, this.grid.y)
+        this.worldRoot.addChild(this.grid.sprite)
+        this.worldRoot.addChild(this.unitSelection.sprite)
 
-        this.unitSelection = PIXI.Sprite.from('public/img/pixel.jpg')
-        this.unitSelection.width = 0
-        this.unitSelection.height = 0
-        this.unitSelection.x = 0
-        this.unitSelection.y = 0
-        this.unitSelection.tint = 0xFF0000
-        this.unitSelection.alpha = 0.3
-    }
+        this.appStage.addEventListener("mousedown", e => {
+            this.mouseDown = true
+            const worldPos = GUTILS.getMouseWorldPosition(e.client, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+            this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
+            this.mouseCanvasPosition = new Vec2(e.client.x, e.client.y)
 
-    start(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
+            this.unitSelection.begin(this.mouseWorldPosition)
+        })
+        this.appStage.addEventListener("mouseup", e => {
+            this.mouseDown = false
+            this.unitSelection.end()
+        })
+        this.appStage.addEventListener("mousemove", e => {
+            const worldPos = GUTILS.getMouseWorldPosition(e.client, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+            this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
+            this.mouseCanvasPosition = new Vec2(e.client.x, e.client.y)
+        })
+
         /* {
         const inventorySlots = document.getElementById("inventory-slots")
         for (let i = 0; i < CONSTS.INVENTORY_SIZE; i++) {
@@ -58,40 +74,11 @@ export class MatchVisualizer {
             inventorySlots?.appendChild(slot)
         }
         } */
-
-        appStage.addEventListener("mousedown", e => {
-            this.mouseDown = true
-            const worldPos = GUTILS.getMouseWorldPosition(e.client, this.cameraWorldPosition, appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
-            this.mouseDownPosition.x = worldPos.x
-            this.mouseDownPosition.y = worldPos.y
-            this.mousePosition = worldPos
-            this.beginUnitSelection()
-        })
-        appStage.addEventListener("mouseup", e => {
-            this.mouseDown = false
-            this.endUnitSelection()
-        })
-        appStage.addEventListener("mousemove", e => {
-            const worldPos = GUTILS.getMouseWorldPosition(e.client, this.cameraWorldPosition, appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
-            this.mousePosition = worldPos
-        })
-
-        this.worldRoot = new PIXI.Container()
-        {
-            this.worldRoot.x = CONSTS.GAME_WIDTH / 2
-            this.worldRoot.y = CONSTS.GAME_HEIGHT / 2
-            this.worldRoot.sortableChildren = true
-            appStage.addChild(this.worldRoot)
-        }
-
-        this.worldRoot.addChild(this.grid)
-
-        this.worldRoot.addChild(this.unitSelection)
     }
 
-    stop(appStage: PIXI.Container<PIXI.DisplayObject>) {
-        if (this.worldRoot) {
-            appStage.removeChild(this.worldRoot)
+    stop() {
+        if (this.worldRoot != undefined) {
+            this.appStage.removeChild(this.worldRoot)
         }
     }
 
@@ -99,59 +86,33 @@ export class MatchVisualizer {
 
     }
 
-    update(deltaTime: number, keys: Set<string>) {
+    update(deltaTime: number, keys: KeyInput) {
         this.moveCamera(deltaTime, keys)
-        this.updateUnitSelection()
-        this.updateShaders(this.elapsedTime)
-    }
+        const worldPos = GUTILS.getMouseWorldPosition(this.mouseCanvasPosition, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+        this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
 
-    private updateShaders(time: number) {
-        if (this.grid.x != this.lastGridPosition.x || this.grid.y != this.lastGridPosition.y) {
-            this.gridFilter.uniforms.uWorldPosition = new PIXI.Point(this.grid.x, this.grid.y)
-        }
-        this.lastGridPosition = new Vec2(this.grid.x, this.grid.y)
-    }
+        this.unitSelection.update(this.mouseWorldPosition, this.mouseDown)
+        this.grid.update(this.cameraWorldPosition)
 
-    private beginUnitSelection() {
-        this.unitSelection.x = this.mouseDownPosition.x
-        this.unitSelection.y = this.mouseDownPosition.y
-        this.unitSelection.visible = true
-    }
-
-    private updateUnitSelection() {
-        if (this.mouseDown) {
-            let diff = new Vec2(this.mousePosition.x - this.mouseDownPosition.x, this.mousePosition.y - this.mouseDownPosition.y)
-            if (diff.x < 0) {
-                this.unitSelection.x = this.mousePosition.x
-            }
-            if (diff.y < 0) {
-                this.unitSelection.y = this.mousePosition.y
-            }
-            this.unitSelection.width = Math.abs(diff.x)
-            this.unitSelection.height = Math.abs(diff.y)
+        if (keys.keyPressed("KeyR")) {
+            gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
         }
     }
 
-    private endUnitSelection() {
-        this.unitSelection.visible = false
-        this.unitSelection.width = 0
-        this.unitSelection.height = 0
-    }
-
-    private moveCamera(deltaTime: number, keys: Set<string>) {
+    private moveCamera(deltaTime: number, keys: KeyInput) {
         this.elapsedTime += deltaTime
 
         let keyInput = new Vec2(0, 0)
-        if (keys.has("KeyA")) {
+        if (keys.isKeyDown("KeyA")) {
             keyInput.x -= 1
         }
-        if (keys.has("KeyD")) {
+        if (keys.isKeyDown("KeyD")) {
             keyInput.x += 1
         }
-        if (keys.has("KeyW")) {
+        if (keys.isKeyDown("KeyW")) {
             keyInput.y -= 1
         }
-        if (keys.has("KeyS")) {
+        if (keys.isKeyDown("KeyS")) {
             keyInput.y += 1
         }
 
@@ -162,7 +123,7 @@ export class MatchVisualizer {
             input.x = keyInput.x
             input.y = keyInput.y
         }
-        else {
+        /* else {
             if (this.moveToPosition != undefined) {
                 let dir = Vec2.sub(this.moveToPosition, this.cameraWorldPosition)
                 if (Vec2.lengthOf(dir) > 5) {
@@ -174,20 +135,28 @@ export class MatchVisualizer {
                     this.moveToPosition = undefined
                 }
             }
-        }
+        } */
 
         input = Vec2.normalize(input)
 
         this.cameraTargetPosition = Vec2.add(this.cameraTargetPosition, Vec2.multiply(input, this.cameraSpeed * deltaTime))
-    
+
         this.cameraWorldPosition.x = UTILS.Lerp(this.cameraWorldPosition.x, this.cameraTargetPosition.x, 1 - Math.exp(-this.cameraStiffness * deltaTime))
         this.cameraWorldPosition.y = UTILS.Lerp(this.cameraWorldPosition.y, this.cameraTargetPosition.y, 1 - Math.exp(-this.cameraStiffness * deltaTime))
 
-        this.grid.x = this.cameraWorldPosition.x - this.grid.width / 2
-        this.grid.y = this.cameraWorldPosition.y - this.grid.height / 2
         if (this.worldRoot) {
             this.worldRoot.x = -this.cameraWorldPosition.x + CONSTS.GAME_WIDTH / 2
             this.worldRoot.y = -this.cameraWorldPosition.y + CONSTS.GAME_HEIGHT / 2
         }
+    }
+
+    spawnUnit(position: Vec2) {
+        const sprite = PIXI.Sprite.from('public/img/pixel.jpg')
+        sprite.width = 20
+        sprite.height = 20
+        sprite.position.x = position.x
+        sprite.position.y = position.y
+        sprite.pivot.set(0.5)
+        this.worldRoot.addChild(sprite)
     }
 }

@@ -21,6 +21,7 @@ export function handleWS(server: Server) {
     let sockets = new Map<string, WebSocket>()
     let clientsInMatchFinder: Map<string, ClientInfo> = new Map<string, ClientInfo>()
     let ongoingMatches = new Map<string, Match>()
+    let clientIdsToMatches = new Map<string, Match>()
 
     const ws = new WebSocketServer({
         server: server
@@ -28,8 +29,10 @@ export function handleWS(server: Server) {
 
     ws.on('connection', (newSock, r) => {
         console.log("connection")
+        const clientId = generateRandomID();
+        (newSock as any).id = clientId
 
-        handleNewClient(newSock, sockets)
+        handleNewClient(newSock, sockets, clientId)
 
         newSock.on('error', console.error)
 
@@ -54,24 +57,33 @@ export function handleWS(server: Server) {
                     addClientToMatchFinder((newSock as any).id, msgObj.info, clientsInMatchFinder)
                     break
                 }
+                case MSG.MessageID.clientSpawnUnit: {
+                    const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientSpawnUnit>(bytes)
+                    if (msgObj == undefined) {
+                        break
+                    }
+                    spawnUnitInMatch(msgObj.position, clientIdsToMatches, clientId)
+                    break
+                }
             }
         })
 
         newSock.on("close", () => {
-            const id: string = (newSock as any).id
+            sockets.delete(clientId)
+            clientsInMatchFinder.delete(clientId)
 
-            sockets.delete(id)
-            clientsInMatchFinder.delete(id)
-
-            const clientMatch = isClientInMatch(id, ongoingMatches)
+            const clientMatch = clientIdsToMatches.get(clientId)
             if (clientMatch != undefined) {
-                handleClientLeftMatch(id, clientMatch, ongoingMatches)
+                clientMatch.disconnectClient(clientId)
+                ongoingMatches.delete(clientMatch.id)
+                clientIdsToMatches.delete(clientMatch.client1Socket.id)
+                clientIdsToMatches.delete(clientMatch.client2Socket.id)
             }
-            console.log("closed " + id)
+            console.log("closed " + clientId)
         })
     })
 
-    matchmakeLoop(sockets, clientsInMatchFinder, ongoingMatches)
+    matchmakeLoop(sockets, clientsInMatchFinder, ongoingMatches, clientIdsToMatches)
     worldUpdateLoop(ongoingMatches)
     sendUpdateLoop()
 }
@@ -79,11 +91,9 @@ export function handleWS(server: Server) {
 function handleNewClient(
     newSocket: WebSocket,
     sockets: Map<string, WebSocket>,
+    id: string
 ) {
-    let id = generateRandomID();
-    (newSocket as any).id = id
     sockets.set(id, newSocket)
-
     let bytes = MSG.getByteFromMessage(MSG.MessageID.serverConnectionAck)
     newSocket.send(bytes)
 }
@@ -114,7 +124,8 @@ function addClientToMatchFinder(
 async function matchmakeLoop(
     sockets: Map<string, WebSocket>,
     clientsInMatchFinder: Map<string, ClientInfo>,
-    ongoingMatches: Map<string, Match>
+    ongoingMatches: Map<string, Match>,
+    clientIdsToMatches: Map<string, Match>
 ) {
     while (true) {
         /* log() */
@@ -127,7 +138,7 @@ async function matchmakeLoop(
 
         for (let m of newMatches) {
             m.ready()
-            
+
             const timeNow = getElapsedTime()
             const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow))
             m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo1))
@@ -135,6 +146,8 @@ async function matchmakeLoop(
             m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo2))
 
             ongoingMatches.set(m.id, m)
+            clientIdsToMatches.set(m.client1Socket.id, m)
+            clientIdsToMatches.set(m.client2Socket.id, m)
         }
 
         await new Promise(r => setTimeout(r, generalUpdateInterval))
@@ -213,20 +226,11 @@ async function sendUpdateLoop(
     }
 }
 
-function isClientInMatch(clientId: string, ongoingMatches: Map<string, Match>): Match | undefined {
-    for (const [matchId, match] of ongoingMatches) {
-        if (match.client1Socket.id == clientId || match.client2Socket.id == clientId) {
-            return match
-        }
+function spawnUnitInMatch(position: Vec2, clientIdsToMatches: Map<string, Match>, clientId: string) {
+    const answerObjs = new MSGOBJS.ServerSpawnUnit(position)
+    const answerBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverSpawnUnit, answerObjs)
+    const match = clientIdsToMatches.get(clientId)
+    if (match != undefined) {
+        match.sendBytesToAll(answerBytes)
     }
-    return undefined
-}
-
-function handleClientLeftMatch(
-    clientId: string,
-    match: Match,
-    ongoingMatches: Map<string, Match>
-) {
-    match.disconnectClient(clientId)
-    ongoingMatches.delete(match.id)
 }

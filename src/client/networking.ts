@@ -12,7 +12,8 @@ import { ServerTimeSyncer } from "./serverTimeSyncer.js"
 type netEvents = {
     allowFindMatch: boolean,
     foundMatch: MatchData,
-    matchWon: undefined
+    matchWon: undefined,
+    spawnServerUnit: Vec2
 }
 
 export const netEventEmitter = mitt<netEvents>()
@@ -21,7 +22,6 @@ const serverTimeSyncer = new ServerTimeSyncer()
 let currentMatchData: MatchData | undefined = undefined
 
 export function handleNetworking(ws: WebSocket) {
-
     ws.onmessage = async function (e) {
         const arrbuf: ArrayBuffer = await e.data.arrayBuffer()
         const bytes = new Uint8Array(arrbuf)
@@ -57,6 +57,11 @@ export function handleNetworking(ws: WebSocket) {
                 netEventEmitter.emit("matchWon")
                 break
             }
+            case MSG.MessageID.serverSpawnUnit: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnit>(bytes)                
+                netEventEmitter.emit("spawnServerUnit", msgObj.position)
+                break
+            }
         }
     }
 }
@@ -72,7 +77,7 @@ export function getServerTime(): number {
     return serverTimeSyncer.getServerTime()
 }
 
-export function getMatchTime(): number {
+export function getMatchTimeMS(): number {
     if (currentMatchData) {
         return serverTimeSyncer.getServerTime() - currentMatchData.timeStarted
     }
@@ -82,5 +87,11 @@ export function getMatchTime(): number {
 function sendServerTimeRequest(ws: WebSocket) {
     const obj = new MSGOBJS.ClientTimeRequest(Date.now())
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientTimeRequest, obj)
+    ws.send(bytes)
+}
+
+export function sendSpawnUnit(ws: WebSocket, position: Vec2) {
+    const obj = new MSGOBJS.ClientSpawnUnit(position)
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientSpawnUnit, obj)
     ws.send(bytes)
 }

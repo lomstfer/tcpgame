@@ -3,11 +3,12 @@ import * as PIXI from "pixi.js"
 import * as CONSTS from "../shared/constants.js"
 import * as UTILS from "../shared/utils.js"
 import * as GUTILS from "./gameUtils.js"
-import { MatchVisualizer } from "./game.js"
+import * as GAME from "./game.js"
 import { ClientInfo } from "../shared/clientInfo.js"
 import { MatchData } from "../shared/matchData.js"
+import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://80.217.244.14:80")
+const websocket = new WebSocket("ws://151.177.144.221:80")
 NET.handleNetworking(websocket)
 
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
@@ -21,6 +22,10 @@ const pixiApp = new PIXI.Application<HTMLCanvasElement>({
     autoStart: false,
 })
 
+window.addEventListener("resize", () => {
+    GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+})
+
 let name = ""
 
 const gameUI = document.getElementById("game-ui")
@@ -28,6 +33,8 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
+    /* if (allow)
+        NET.findMatch(websocket, "nameo") // for development speed */
     if (findMatchForm) {
         findMatchForm.style.display = allow ? "initial" : "none"
     }
@@ -65,7 +72,7 @@ function enterMatch(data: MatchData) {
     }
 
     pixiApp.start()
-    matchVisualizer.start(pixiApp.stage, data)
+    game = new GAME.GameInstance(pixiApp.stage, data)
     GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
 }
 
@@ -80,43 +87,30 @@ function enterMenu() {
         background.style.display = "initial"
     }
 
-    matchVisualizer.stop(pixiApp.stage)
+    game?.stop()
     pixiApp.stop()
 }
 
 document.body.appendChild(pixiApp.view)
 
-const keys = new Set<string>()
+const keyInput = new KeyInput()
 
-document.addEventListener("keydown", (event) => {
-    keys.add(event.code)
-})
-document.addEventListener("keyup", (event) => {
-    keys.delete(event.code)
-})
-window.addEventListener("blur", () => {
-    keys.clear()
-})
-
-const matchVisualizer = new MatchVisualizer()
+let game: GAME.GameInstance | undefined = undefined
 pixiApp.ticker.add(() => {
     const dt = pixiApp.ticker.deltaMS / 1000
-    console.log(dt)
-
+    
     if (timeEl) {
-        timeEl.textContent = (NET.getMatchTime() / 1000).toFixed(1)
+        timeEl.textContent = (NET.getMatchTimeMS() / 1000).toFixed(1)
     }
 
-    matchVisualizer.update(dt, keys)
+    game?.update(dt, keyInput)
+    keyInput.updateLastKeys()
 })
 
-window.addEventListener("resize", () => {
-    handleResize()
+GAME.gameEventEmitter.on("spawnUnitCommand", position => {
+    NET.sendSpawnUnit(websocket, position)
 })
-function handleResize() {
-    GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
-    keys.clear()
-}
 
-
-// GAME.startGame(app)
+NET.netEventEmitter.on("spawnServerUnit", position => {
+    game?.spawnUnit(position)
+})

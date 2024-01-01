@@ -2,7 +2,7 @@ import { encode } from "@msgpack/msgpack"
 import { decode } from "@msgpack/msgpack"
 import { prependUint8 } from "../shared/utils.js"
 
-// 0 - 255
+// maximum of 256 messageids
 export enum MessageID {
     serverConnectionAck,
     clientEnterMatchFinder,
@@ -10,6 +10,8 @@ export enum MessageID {
     clientTimeRequest,
     serverTimeAnswer,
     serverOpponentDisconnected,
+    clientSpawnUnit,
+    serverSpawnUnit,
 }
 
 export function getByteFromMessage(messageID: MessageID): Uint8Array {

@@ -32,6 +32,16 @@ export class ServerTimeAnswer {
     }
 }
 
-/* export class ServerOpponentDisconnected {
+export class ClientSpawnUnit {
+    position: Vec2
+    constructor(position: Vec2) {
+        this.position = position
+    }
+}
 
-} */
+export class ServerSpawnUnit {
+    position: Vec2
+    constructor(position: Vec2) {
+        this.position = position
+    }
+}
