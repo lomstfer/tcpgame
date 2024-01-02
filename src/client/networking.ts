@@ -5,15 +5,16 @@ import mitt from "mitt" // events
 import { Vec2 } from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
 import * as UTILS from "../shared/utils.js"
-import { Item } from "../shared/item.js"
 import { MatchData } from "../shared/matchData.js"
 import { ServerTimeSyncer } from "./serverTimeSyncer.js"
+import { Unit } from "../shared/unit.js"
 
 type netEvents = {
     allowFindMatch: boolean,
     foundMatch: MatchData,
     matchWon: undefined,
-    spawnServerUnit: Vec2
+    spawnServerUnitSelf: Unit
+    spawnServerUnitOther: Unit
 }
 
 export const netEventEmitter = mitt<netEvents>()
@@ -57,9 +58,14 @@ export function handleNetworking(ws: WebSocket) {
                 netEventEmitter.emit("matchWon")
                 break
             }
-            case MSG.MessageID.serverSpawnUnit: {
-                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnit>(bytes)                
-                netEventEmitter.emit("spawnServerUnit", msgObj.position)
+            case MSG.MessageID.serverSpawnUnitSelf: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnitSelf>(bytes)                
+                netEventEmitter.emit("spawnServerUnitSelf", msgObj.unit)
+                break
+            }
+            case MSG.MessageID.serverSpawnUnitOther: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnitOther>(bytes)                
+                netEventEmitter.emit("spawnServerUnitOther", msgObj.unit)
                 break
             }
         }
@@ -91,7 +97,7 @@ function sendServerTimeRequest(ws: WebSocket) {
 }
 
 export function sendSpawnUnit(ws: WebSocket, position: Vec2) {
-    const obj = new MSGOBJS.ClientSpawnUnit(position)
+    const obj = new MSGOBJS.ClientSpawnUnitRequest(position)
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientSpawnUnit, obj)
     ws.send(bytes)
 }

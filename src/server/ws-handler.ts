@@ -4,11 +4,13 @@ import { WebSocket } from 'ws'
 import * as CONSTS from "../shared/constants.js"
 import * as MSG from "../shared/messageStuff.js"
 import * as MSGOBJS from "../shared/messageObjects.js"
+import * as SUTILS from "./serverUtils.js"
 import { Vec2 } from "../shared/utils.js"
 import { Match } from "./match.js"
 import { ClientInfo } from "../shared/clientInfo.js"
 import { WebSocketWithId } from "./match.js"
 import { MatchData } from "../shared/matchData.js"
+import { Unit } from "../shared/unit.js"
 
 const generalUpdateInterval = 1000 / 5
 
@@ -29,7 +31,7 @@ export function handleWS(server: Server) {
 
     ws.on('connection', (newSock, r) => {
         console.log("connection")
-        const clientId = generateRandomID();
+        const clientId = SUTILS.generateRandomID();
         (newSock as any).id = clientId
 
         handleNewClient(newSock, sockets, clientId)
@@ -54,11 +56,11 @@ export function handleWS(server: Server) {
                     if (msgObj == undefined) {
                         break
                     }
-                    addClientToMatchFinder((newSock as any).id, msgObj.info, clientsInMatchFinder)
+                    addClientToMatchFinder(clientId, msgObj.info, clientsInMatchFinder)
                     break
                 }
                 case MSG.MessageID.clientSpawnUnit: {
-                    const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientSpawnUnit>(bytes)
+                    const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientSpawnUnitRequest>(bytes)
                     if (msgObj == undefined) {
                         break
                     }
@@ -98,12 +100,7 @@ function handleNewClient(
     newSocket.send(bytes)
 }
 
-function generateRandomID(): string {
-    function s4() {
-        return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
-    }
-    return s4() + s4() + s4()
-}
+
 
 /* const names = ["Arrow", "Echo", "Sage", "River", "Wren", "Orion", "Clover", "Atlas", "Ember", "Luna", "Phoenix", "Rowan", "Meadow", "Harbor", "Sterling", "Haven", "Ivy", "Thorne", "Ash", "Quinn"]
 function getRandomName(): string {
@@ -140,9 +137,9 @@ async function matchmakeLoop(
             m.ready()
 
             const timeNow = getElapsedTime()
-            const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow))
+            const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow, false))
             m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo1))
-            const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, timeNow))
+            const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, timeNow, true))
             m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo2))
 
             ongoingMatches.set(m.id, m)
@@ -194,7 +191,7 @@ function consumeClientsFromMatchFinder(
             continue
         }
 
-        let newMatch = new Match(generateRandomID(), new WebSocketWithId(socket1, last[0]), new WebSocketWithId(socket2, idOfCurrent), last[1], client)
+        let newMatch = new Match(SUTILS.generateRandomID(), new WebSocketWithId(socket1, last[0]), new WebSocketWithId(socket2, idOfCurrent), last[1], client)
         output.push(newMatch)
 
         clientsInMatchFinder.delete(last[0])
@@ -227,10 +224,8 @@ async function sendUpdateLoop(
 }
 
 function spawnUnitInMatch(position: Vec2, clientIdsToMatches: Map<string, Match>, clientId: string) {
-    const answerObjs = new MSGOBJS.ServerSpawnUnit(position)
-    const answerBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverSpawnUnit, answerObjs)
     const match = clientIdsToMatches.get(clientId)
     if (match != undefined) {
-        match.sendBytesToAll(answerBytes)
+        match.spawnUnit(clientId, position)
     }
 }

@@ -8,6 +8,9 @@ import { UnitSelection } from "./unitSelection.js"
 import { Grid } from "./grid.js"
 import mitt from "mitt" // events
 import { KeyInput } from "./keyInput.js"
+import { Unit } from "../shared/unit.js"
+import { UnitRepresentation } from "./unitRepresentation.js"
+import * as COLORS from "./colors.js"
 
 type gameEvents = {
     spawnUnitCommand: Vec2
@@ -30,10 +33,23 @@ export class GameInstance {
     private mouseWorldPosition = new Vec2(0, 0)
     private mouseCanvasPosition = new Vec2(0, 0)
 
-    private unitSelection = new UnitSelection()
+    private unitSelection: UnitSelection
     private grid = new Grid()
 
+    private selfUnits = new Set<UnitRepresentation>()
+    private otherUnits = new Set<UnitRepresentation>()
+
     constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
+        if (matchData.team) {
+            COLORS.setSelfColor(COLORS.PLAYER_1)
+            COLORS.setOtherColor(COLORS.PLAYER_2)
+        }
+        else {
+            COLORS.setSelfColor(COLORS.PLAYER_2)
+            COLORS.setOtherColor(COLORS.PLAYER_1)
+        }
+        this.unitSelection = new UnitSelection()
+
         this.appStage = appStage
 
         this.worldRoot = new PIXI.Container()
@@ -91,7 +107,7 @@ export class GameInstance {
         const worldPos = GUTILS.getMouseWorldPosition(this.mouseCanvasPosition, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
         this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
 
-        this.unitSelection.update(this.mouseWorldPosition, this.mouseDown)
+        this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
         this.grid.update(this.cameraWorldPosition)
 
         if (keys.keyPressed("KeyR")) {
@@ -150,13 +166,19 @@ export class GameInstance {
         }
     }
 
-    spawnUnit(position: Vec2) {
-        const sprite = PIXI.Sprite.from('public/img/pixel.jpg')
-        sprite.width = 20
-        sprite.height = 20
-        sprite.position.x = position.x
-        sprite.position.y = position.y
-        sprite.pivot.set(0.5)
-        this.worldRoot.addChild(sprite)
+    spawnUnitSelf(unit: Unit) {
+        const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
+
+        this.worldRoot.addChild(unitR.body)
+
+        this.selfUnits.add(unitR)
+    }
+
+    spawnUnitOther(unit: Unit) {
+        const unitR = new UnitRepresentation(unit, COLORS.OTHER_COLOR)
+
+        this.worldRoot.addChild(unitR.body)
+
+        this.selfUnits.add(unitR)
     }
 }

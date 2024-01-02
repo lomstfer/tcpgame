@@ -1,5 +1,6 @@
 import { ClientInfo } from "./clientInfo"
 import { MatchData } from "./matchData"
+import { Unit } from "./unit"
 import { Vec2 } from "./utils"
 
 export class ClientEnterMatchFinder {
@@ -32,16 +33,23 @@ export class ServerTimeAnswer {
     }
 }
 
-export class ClientSpawnUnit {
+export class ClientSpawnUnitRequest {
     position: Vec2
     constructor(position: Vec2) {
         this.position = position
     }
 }
 
-export class ServerSpawnUnit {
-    position: Vec2
-    constructor(position: Vec2) {
-        this.position = position
+export class ServerSpawnUnitSelf {
+    unit: Unit
+    constructor(unit: Unit) {
+        this.unit = unit
+    }
+}
+
+export class ServerSpawnUnitOther {
+    unit: Unit
+    constructor(unit: Unit) {
+        this.unit = unit
     }
 }

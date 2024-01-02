@@ -1,8 +1,13 @@
 import * as PIXI from "pixi.js"
 import { Vec2 } from "../shared/utils.js"
+import { UnitRepresentation } from "./unitRepresentation.js"
+import * as GUTILS from "./gameUtils.js"
+import * as COLORS from "./colors.js"
 
 export class UnitSelection {
     sprite: PIXI.Sprite
+
+    selectedUnits = new Set<UnitRepresentation>()
 
     private mouseDownPosition: Vec2 | undefined
 
@@ -12,8 +17,9 @@ export class UnitSelection {
         this.sprite.height = 0
         this.sprite.x = 0
         this.sprite.y = 0
-        this.sprite.tint = 0xFF0000
+        this.sprite.tint = COLORS.UNIT_SELECTION_COLOR
         this.sprite.alpha = 0.3
+        this.sprite.zIndex = 1
     }
 
     begin(mouseDownPosition: Vec2) {
@@ -23,7 +29,7 @@ export class UnitSelection {
         this.sprite.visible = true
     }
 
-    update(mousePosition: Vec2, mouseDown: boolean) {
+    update(mousePosition: Vec2, mouseDown: boolean, selectableUnits: Set<UnitRepresentation>) {
         if (!mouseDown || this.mouseDownPosition == undefined) {
             return
         }
@@ -36,9 +42,24 @@ export class UnitSelection {
         }
         this.sprite.width = Math.abs(diff.x)
         this.sprite.height = Math.abs(diff.y)
+
+        this.selectedUnits.clear()
+        for (const u of selectableUnits) {
+            if (GUTILS.overlaps(
+                    this.sprite.x, this.sprite.y, this.sprite.width, this.sprite.height,
+                    u.body.x - u.body.width/2, u.body.y - u.body.height/2, u.body.width, u.body.height
+            )) {
+                u.body.getChildAt(0).visible = true
+                this.selectedUnits.add(u)
+            }
+            else {
+                u.body.getChildAt(0).visible = false
+                this.selectedUnits.delete(u)
+            }
+        }
     }
 
-    end(/* list of selectables */) {
+    end() {
         this.sprite.visible = false
         this.sprite.width = 0
         this.sprite.height = 0

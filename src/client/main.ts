@@ -8,7 +8,7 @@ import { ClientInfo } from "../shared/clientInfo.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://151.177.144.221:80")
+const websocket = new WebSocket("ws://151.177.155.193:80")
 NET.handleNetworking(websocket)
 
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
@@ -33,11 +33,11 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    /* if (allow)
-        NET.findMatch(websocket, "nameo") // for development speed */
-    if (findMatchForm) {
+    if (allow)
+        NET.findMatch(websocket, "nameo") // for development speed
+    /* if (findMatchForm) {
         findMatchForm.style.display = allow ? "initial" : "none"
-    }
+    } */
 })
 
 const findMatchButton = document.getElementById("find-match-button")
@@ -111,6 +111,9 @@ GAME.gameEventEmitter.on("spawnUnitCommand", position => {
     NET.sendSpawnUnit(websocket, position)
 })
 
-NET.netEventEmitter.on("spawnServerUnit", position => {
-    game?.spawnUnit(position)
+NET.netEventEmitter.on("spawnServerUnitSelf", unit => {
+    game?.spawnUnitSelf(unit)
+})
+NET.netEventEmitter.on("spawnServerUnitOther", unit => {
+    game?.spawnUnitOther(unit)
 })
