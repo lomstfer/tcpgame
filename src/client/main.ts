@@ -1,14 +1,12 @@
 import * as NET from "./networking.js"
 import * as PIXI from "pixi.js"
 import * as CONSTS from "../shared/constants.js"
-import * as UTILS from "../shared/utils.js"
 import * as GUTILS from "./gameUtils.js"
 import * as GAME from "./game.js"
-import { ClientInfo } from "../shared/clientInfo.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://151.177.155.193:80")
+const websocket = new WebSocket("ws://151.177.146.116:80")
 NET.handleNetworking(websocket)
 
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
@@ -94,7 +92,7 @@ function enterMenu() {
 document.body.appendChild(pixiApp.view)
 
 const keyInput = new KeyInput()
-
+let accumulator = 0
 let game: GAME.GameInstance | undefined = undefined
 pixiApp.ticker.add(() => {
     const dt = pixiApp.ticker.deltaMS / 1000
@@ -104,11 +102,21 @@ pixiApp.ticker.add(() => {
     }
 
     game?.update(dt, keyInput)
+    accumulator += dt
+    while (accumulator >= CONSTS.WORLD_UPDATE_S) {
+        game?.fixedUpdate()
+        accumulator -= CONSTS.WORLD_UPDATE_S
+    }
+    game?.interpolate(accumulator / CONSTS.WORLD_UPDATE_S)
+    
     keyInput.updateLastKeys()
 })
 
 GAME.gameEventEmitter.on("spawnUnitCommand", position => {
     NET.sendSpawnUnit(websocket, position)
+})
+GAME.gameEventEmitter.on("moveUnitsCommand", data => {
+    NET.sendMoveUnits(websocket, data)
 })
 
 NET.netEventEmitter.on("spawnServerUnitSelf", unit => {
@@ -116,4 +124,7 @@ NET.netEventEmitter.on("spawnServerUnitSelf", unit => {
 })
 NET.netEventEmitter.on("spawnServerUnitOther", unit => {
     game?.spawnUnitOther(unit)
+})
+NET.netEventEmitter.on("serverUnitsUpdate", units => {
+    game?.handleServerUpdate(units)
 })

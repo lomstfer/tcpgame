@@ -53,3 +53,19 @@ export class ServerSpawnUnitOther {
         this.unit = unit
     }
 }
+
+export class ClientMoveUnits {
+    unitIds: string[]
+    position: Vec2
+    constructor(unitIds: string[], position: Vec2) {
+        this.unitIds = unitIds
+        this.position = position
+    }
+}
+
+export class ServerUnitsUpdate {
+    units: Unit[]
+    constructor(units: Unit[]) {
+        this.units = units
+    }
+}

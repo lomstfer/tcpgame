@@ -1,5 +1,4 @@
 import * as PIXI from "pixi.js"
-import * as GUTILS from "./gameUtils.js"
 import * as UTILS from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
 import { Vec2 } from "../shared/utils.js"
@@ -11,9 +10,12 @@ import { KeyInput } from "./keyInput.js"
 import { Unit } from "../shared/unit.js"
 import { UnitRepresentation } from "./unitRepresentation.js"
 import * as COLORS from "./colors.js"
+import { Camera } from "./camera.js"
+import * as SIMULATION from "../shared/simulation.js"
 
 type gameEvents = {
     spawnUnitCommand: Vec2
+    moveUnitsCommand: [Set<Unit>, Vec2]
 }
 export const gameEventEmitter = mitt<gameEvents>()
 
@@ -23,10 +25,7 @@ export class GameInstance {
     private worldRoot: PIXI.Container
     private elapsedTime = 0
 
-    private cameraTargetPosition = new Vec2(0, 0)
-    private cameraWorldPosition = new Vec2(0, 0)
-    private cameraStiffness = 6
-    private cameraSpeed = 200
+    private camera = new Camera()
 
     private moveToPosition: Vec2 | undefined = undefined
     private mouseDown = false
@@ -36,8 +35,10 @@ export class GameInstance {
     private unitSelection: UnitSelection
     private grid = new Grid()
 
-    private selfUnits = new Set<UnitRepresentation>()
-    private otherUnits = new Set<UnitRepresentation>()
+    private selfUnits = new Map<string, UnitRepresentation>()
+    private otherUnits = new Map<string, UnitRepresentation>()
+    private selfUnitsUnconfirmed = new Array<UnitRepresentation>()
+    private oldUnitsPositions = new Map<string, Vec2>()
 
     constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
         if (matchData.team) {
@@ -65,10 +66,8 @@ export class GameInstance {
 
         this.appStage.addEventListener("mousedown", e => {
             this.mouseDown = true
-            const worldPos = GUTILS.getMouseWorldPosition(e.client, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
-            this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
+            this.mouseWorldPosition = this.camera.getMouseWorldPosition(e.client, this.appStage)
             this.mouseCanvasPosition = new Vec2(e.client.x, e.client.y)
-
             this.unitSelection.begin(this.mouseWorldPosition)
         })
         this.appStage.addEventListener("mouseup", e => {
@@ -76,8 +75,7 @@ export class GameInstance {
             this.unitSelection.end()
         })
         this.appStage.addEventListener("mousemove", e => {
-            const worldPos = GUTILS.getMouseWorldPosition(e.client, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
-            this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
+            this.mouseWorldPosition = this.camera.getMouseWorldPosition(e.client, this.appStage)
             this.mouseCanvasPosition = new Vec2(e.client.x, e.client.y)
         })
 
@@ -98,80 +96,72 @@ export class GameInstance {
         }
     }
 
-    simulate() {
-
-    }
 
     update(deltaTime: number, keys: KeyInput) {
-        this.moveCamera(deltaTime, keys)
-        const worldPos = GUTILS.getMouseWorldPosition(this.mouseCanvasPosition, this.cameraWorldPosition, this.appStage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
-        this.mouseWorldPosition = new Vec2(worldPos.x, worldPos.y)
+        this.camera.update(deltaTime, keys)
+        this.mouseWorldPosition = this.camera.getMouseWorldPosition(this.mouseCanvasPosition, this.appStage)
 
         this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
-        this.grid.update(this.cameraWorldPosition)
+        this.grid.update(this.camera.worldPosition)
 
         if (keys.keyPressed("KeyR")) {
             gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
+            this.spawnUnitSelfUnconfirmed(this.mouseWorldPosition)
+        }
+
+        if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
+            gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.selectedUnits, this.mouseWorldPosition])
+        }
+
+        if (this.worldRoot) {
+            this.worldRoot.x = -this.camera.worldPosition.x + CONSTS.GAME_WIDTH / 2
+            this.worldRoot.y = -this.camera.worldPosition.y + CONSTS.GAME_HEIGHT / 2
         }
     }
 
-    private moveCamera(deltaTime: number, keys: KeyInput) {
-        this.elapsedTime += deltaTime
+    fixedUpdate() {
+        this.moveUnits()
+    }
 
-        let keyInput = new Vec2(0, 0)
-        if (keys.isKeyDown("KeyA")) {
-            keyInput.x -= 1
-        }
-        if (keys.isKeyDown("KeyD")) {
-            keyInput.x += 1
-        }
-        if (keys.isKeyDown("KeyW")) {
-            keyInput.y -= 1
-        }
-        if (keys.isKeyDown("KeyS")) {
-            keyInput.y += 1
-        }
-
-        let input = new Vec2(0, 0)
-
-        if (keyInput.x != 0 || keyInput.y != 0) {
-            this.moveToPosition = undefined
-            input.x = keyInput.x
-            input.y = keyInput.y
-        }
-        /* else {
-            if (this.moveToPosition != undefined) {
-                let dir = Vec2.sub(this.moveToPosition, this.cameraWorldPosition)
-                if (Vec2.lengthOf(dir) > 5) {
-                    dir = Vec2.normalize(dir)
-                    input.x = dir.x
-                    input.y = dir.y
-                }
-                else {
-                    this.moveToPosition = undefined
-                }
+    interpolate(alpha: number) {
+        for (let [id, pos] of this.oldUnitsPositions) {
+            const unit = this.selfUnits.get(id) || this.otherUnits.get(id)
+            if (unit == undefined) {
+                continue
             }
-        } */
-
-        input = Vec2.normalize(input)
-
-        this.cameraTargetPosition = Vec2.add(this.cameraTargetPosition, Vec2.multiply(input, this.cameraSpeed * deltaTime))
-
-        this.cameraWorldPosition.x = UTILS.Lerp(this.cameraWorldPosition.x, this.cameraTargetPosition.x, 1 - Math.exp(-this.cameraStiffness * deltaTime))
-        this.cameraWorldPosition.y = UTILS.Lerp(this.cameraWorldPosition.y, this.cameraTargetPosition.y, 1 - Math.exp(-this.cameraStiffness * deltaTime))
-
-        if (this.worldRoot) {
-            this.worldRoot.x = -this.cameraWorldPosition.x + CONSTS.GAME_WIDTH / 2
-            this.worldRoot.y = -this.cameraWorldPosition.y + CONSTS.GAME_HEIGHT / 2
+            unit.body.position.x = UTILS.Lerp(pos.x, unit.data.position.x, alpha)
+            unit.body.position.y = UTILS.Lerp(pos.y, unit.data.position.y, alpha)
         }
+    }
+
+    private moveUnits() {
+        for (const u of this.selfUnits.values()) {
+            this.oldUnitsPositions.set(u.data.id, u.data.position)
+            SIMULATION.moveUnit(u.data)
+        }
+        for (const u of this.otherUnits.values()) {
+            this.oldUnitsPositions.set(u.data.id, u.data.position)
+            SIMULATION.moveUnit(u.data)
+        }
+    }
+
+    private spawnUnitSelfUnconfirmed(position: Vec2) {
+        const unitR = new UnitRepresentation(new Unit("none", position), COLORS.SELF_COLOR)
+
+        this.worldRoot.addChild(unitR.body)
+
+        this.selfUnitsUnconfirmed.push(unitR)
     }
 
     spawnUnitSelf(unit: Unit) {
+        this.worldRoot.removeChild(this.selfUnitsUnconfirmed[0].body)
+        this.selfUnitsUnconfirmed.splice(0, 1)
+
         const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
 
         this.worldRoot.addChild(unitR.body)
 
-        this.selfUnits.add(unitR)
+        this.selfUnits.set(unitR.data.id, unitR)
     }
 
     spawnUnitOther(unit: Unit) {
@@ -179,6 +169,15 @@ export class GameInstance {
 
         this.worldRoot.addChild(unitR.body)
 
-        this.selfUnits.add(unitR)
+        this.otherUnits.set(unitR.data.id, unitR)
+    }
+
+    handleServerUpdate(units: Unit[]) {
+        for (const updatedUnit of units) {
+            const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
+            if (unit != undefined) {
+                unit.data.movingTo = updatedUnit.movingTo
+            }
+        }
     }
 }

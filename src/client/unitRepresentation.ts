@@ -1,11 +1,14 @@
 import * as PIXI from "pixi.js"
 import { Unit } from "../shared/unit.js"
 import * as COLORS from "./colors.js"
+import { Vec2 } from "../shared/utils.js"
 
 export class UnitRepresentation {
     data: Unit
     body: PIXI.Graphics
     border: PIXI.Graphics
+
+    velocity = new Vec2(0, 0)
     
     constructor(data: Unit, color: number) {
         this.data = data
@@ -22,7 +25,6 @@ export class UnitRepresentation {
         this.body.drawRect(0, 0, width, height)
         this.body.endFill()
         this.body.pivot.set(width/2, height/2)
-        console.log(this.body.scale)
         this.body.tint = color
 
         this.border = new PIXI.Graphics()
@@ -31,5 +33,12 @@ export class UnitRepresentation {
         this.border.visible = false
     
         this.body.addChild(this.border)
+    }
+
+    update(deltatime: number) {
+        let result = new Vec2(this.body.x, this.body.y)
+        result = Vec2.add(result, Vec2.multiply(this.velocity, deltatime))
+        this.body.x = result.x
+        this.body.y = result.y
     }
 }

@@ -13,6 +13,8 @@ export enum MessageID {
     clientSpawnUnit,
     serverSpawnUnitSelf,
     serverSpawnUnitOther,
+    clientMoveUnits,
+    serverUnitsUpdate,
 }
 
 export function getByteFromMessage(messageID: MessageID): Uint8Array {

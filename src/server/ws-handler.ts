@@ -67,6 +67,15 @@ export function handleWS(server: Server) {
                     spawnUnitInMatch(msgObj.position, clientIdsToMatches, clientId)
                     break
                 }
+                case MSG.MessageID.clientMoveUnits: {
+                    const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientMoveUnits>(bytes)
+                    if (msgObj == undefined) {
+                        break
+                    }
+                    console.log(msgObj.unitIds)
+                    setUnitsOnTheMove(msgObj.unitIds, msgObj.position, clientIdsToMatches, clientId)
+                    break
+                }
             }
         })
 
@@ -87,7 +96,7 @@ export function handleWS(server: Server) {
 
     matchmakeLoop(sockets, clientsInMatchFinder, ongoingMatches, clientIdsToMatches)
     worldUpdateLoop(ongoingMatches)
-    sendUpdateLoop()
+    sendUpdateLoop(ongoingMatches)
 }
 
 function handleNewClient(
@@ -99,8 +108,6 @@ function handleNewClient(
     let bytes = MSG.getByteFromMessage(MSG.MessageID.serverConnectionAck)
     newSocket.send(bytes)
 }
-
-
 
 /* const names = ["Arrow", "Echo", "Sage", "River", "Wren", "Orion", "Clover", "Atlas", "Ember", "Luna", "Phoenix", "Rowan", "Meadow", "Harbor", "Sterling", "Haven", "Ivy", "Thorne", "Ash", "Quinn"]
 function getRandomName(): string {
@@ -134,7 +141,7 @@ async function matchmakeLoop(
         let newMatches = consumeClientsFromMatchFinder(clientsInMatchFinder, sockets)
 
         for (let m of newMatches) {
-            m.ready()
+            // m.ready()
 
             const timeNow = getElapsedTime()
             const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow, false))
@@ -208,17 +215,27 @@ async function worldUpdateLoop(
 ) {
     while (true) {
         for (const [id, match] of matches) {
-            match.simulate(CONSTS.WORLD_UPDATE_MS)
+            match.simulate(CONSTS.WORLD_UPDATE_S)
         }
-        console.log(getElapsedTime())
+        // console.log(getElapsedTime())
         await new Promise(r => setTimeout(r, CONSTS.WORLD_UPDATE_MS))
     }
 }
 
 async function sendUpdateLoop(
+    matches: Map<string, Match>,
 ) {
     while (true) {
-
+        for (const m of matches.values()) {
+            const units = m.consumeUpdatedUnits()
+            if (units.length == 0) {
+                continue
+            }
+            const obj = new MSGOBJS.ServerUnitsUpdate(units)
+            const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
+            m.client1Socket.socket.send(bytes)
+            m.client2Socket.socket.send(bytes)
+        }
         await new Promise(r => setTimeout(r, CONSTS.SERVER_SEND_MS))
     }
 }
@@ -228,4 +245,12 @@ function spawnUnitInMatch(position: Vec2, clientIdsToMatches: Map<string, Match>
     if (match != undefined) {
         match.spawnUnit(clientId, position)
     }
+}
+
+function setUnitsOnTheMove(unitIds: string[], toPosition: Vec2, clientIdsToMatches: Map<string, Match>, clientId: string) {
+    const match = clientIdsToMatches.get(clientId)
+    if (match == undefined) {
+        return
+    }
+    unitIds.forEach(unitId => match.moveUnit(unitId, toPosition))
 }

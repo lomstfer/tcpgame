@@ -14,7 +14,8 @@ type netEvents = {
     foundMatch: MatchData,
     matchWon: undefined,
     spawnServerUnitSelf: Unit
-    spawnServerUnitOther: Unit
+    spawnServerUnitOther: Unit,
+    serverUnitsUpdate: Unit[]
 }
 
 export const netEventEmitter = mitt<netEvents>()
@@ -68,6 +69,11 @@ export function handleNetworking(ws: WebSocket) {
                 netEventEmitter.emit("spawnServerUnitOther", msgObj.unit)
                 break
             }
+            case MSG.MessageID.serverUnitsUpdate: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerUnitsUpdate>(bytes)                
+                netEventEmitter.emit("serverUnitsUpdate", msgObj.units)
+                break
+            }
         }
     }
 }
@@ -99,5 +105,12 @@ function sendServerTimeRequest(ws: WebSocket) {
 export function sendSpawnUnit(ws: WebSocket, position: Vec2) {
     const obj = new MSGOBJS.ClientSpawnUnitRequest(position)
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientSpawnUnit, obj)
+    ws.send(bytes)
+}
+
+export function sendMoveUnits(ws: WebSocket, data: [Set<Unit>, Vec2]) {
+    const ids = Array.from(data[0]).map(u => u.id)
+    const obj = new MSGOBJS.ClientMoveUnits(ids, data[1])
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientMoveUnits, obj)
     ws.send(bytes)
 }
