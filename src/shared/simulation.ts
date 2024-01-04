@@ -12,4 +12,5 @@ export function moveUnit(unit: Unit) {
     }
     d = Vec2.normalize(d)
     unit.position = Vec2.add(unit.position, Vec2.multiply(d, CONSTS.UNIT_SPEED * CONSTS.WORLD_UPDATE_S))
+    console.log(unit.position)
 }

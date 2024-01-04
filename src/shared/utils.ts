@@ -79,6 +79,10 @@ export class Vec2 {
         return Math.sqrt(vec.x * vec.x + vec.y * vec.y)
     }
 
+    static squareLengthOf(vec: Vec2): number {
+        return vec.x * vec.x + vec.y * vec.y
+    }
+
     static Lerp(p0: Vec2, p1: Vec2, t: number): Vec2 {
         t = t < 0 ? 0 : t > 1 ? 1 : t
         return new Vec2(p0.x + (p1.x - p0.x) * t, p0.y + (p1.y - p0.y) * t)

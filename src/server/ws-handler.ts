@@ -11,8 +11,10 @@ import { ClientInfo } from "../shared/clientInfo.js"
 import { WebSocketWithId } from "./match.js"
 import { MatchData } from "../shared/matchData.js"
 import { Unit } from "../shared/unit.js"
+import NanoTimer from "nanotimer"
 
-const generalUpdateInterval = 1000 / 5
+const generalUpdateWait = 1 / 5
+const checkAndSendUpdateWait = 1 / 20
 
 const startTime = Date.now()
 function getElapsedTime() {
@@ -94,9 +96,20 @@ export function handleWS(server: Server) {
         })
     })
 
-    matchmakeLoop(sockets, clientsInMatchFinder, ongoingMatches, clientIdsToMatches)
-    worldUpdateLoop(ongoingMatches)
-    sendUpdateLoop(ongoingMatches)
+    const worldTimer = new NanoTimer()
+    worldTimer.setInterval(() => {
+        worldUpdate(ongoingMatches)
+    }, "", CONSTS.WORLD_UPDATE_S.toString() + "s")
+
+    const matchmakeTimer = new NanoTimer()
+    matchmakeTimer.setInterval(() => {
+        matchmakeUpdate(sockets, clientsInMatchFinder, ongoingMatches, clientIdsToMatches)
+    }, "", generalUpdateWait.toString() + "s")
+
+    const sendTimer = new NanoTimer()
+    sendTimer.setInterval(() => {
+        sendUpdate(ongoingMatches)
+    }, "", checkAndSendUpdateWait.toString() + "s")
 }
 
 function handleNewClient(
@@ -109,11 +122,6 @@ function handleNewClient(
     newSocket.send(bytes)
 }
 
-/* const names = ["Arrow", "Echo", "Sage", "River", "Wren", "Orion", "Clover", "Atlas", "Ember", "Luna", "Phoenix", "Rowan", "Meadow", "Harbor", "Sterling", "Haven", "Ivy", "Thorne", "Ash", "Quinn"]
-function getRandomName(): string {
-    return names[Math.floor(Math.random() * (names.length - 1))]
-} */
-
 function addClientToMatchFinder(
     clientId: string,
     clientInfo: ClientInfo,
@@ -125,36 +133,32 @@ function addClientToMatchFinder(
     clientsInMatchFinder.set(clientId, clientInfo)
 }
 
-async function matchmakeLoop(
+function matchmakeUpdate(
     sockets: Map<string, WebSocket>,
     clientsInMatchFinder: Map<string, ClientInfo>,
     ongoingMatches: Map<string, Match>,
     clientIdsToMatches: Map<string, Match>
 ) {
-    while (true) {
+    /* log() */
+    if (clientsInMatchFinder.size < 2) {
         /* log() */
-        while (clientsInMatchFinder.size < 2) {
-            /* log() */
-            await new Promise(r => setTimeout(r, generalUpdateInterval))
-        }
+        return
+    }
 
-        let newMatches = consumeClientsFromMatchFinder(clientsInMatchFinder, sockets)
+    let newMatches = consumeClientsFromMatchFinder(clientsInMatchFinder, sockets)
 
-        for (let m of newMatches) {
-            // m.ready()
+    for (let m of newMatches) {
+        // m.ready()
 
-            const timeNow = getElapsedTime()
-            const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow, false))
-            m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo1))
-            const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, timeNow, true))
-            m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo2))
+        const timeNow = getElapsedTime()
+        const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow, false))
+        m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo1))
+        const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, timeNow, true))
+        m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo2))
 
-            ongoingMatches.set(m.id, m)
-            clientIdsToMatches.set(m.client1Socket.id, m)
-            clientIdsToMatches.set(m.client2Socket.id, m)
-        }
-
-        await new Promise(r => setTimeout(r, generalUpdateInterval))
+        ongoingMatches.set(m.id, m)
+        clientIdsToMatches.set(m.client1Socket.id, m)
+        clientIdsToMatches.set(m.client2Socket.id, m)
     }
 
     function log() {
@@ -210,33 +214,31 @@ function consumeClientsFromMatchFinder(
     return output
 }
 
-async function worldUpdateLoop(
+let last = Date.now()
+function worldUpdate(
     matches: Map<string, Match>,
 ) {
-    while (true) {
-        for (const [id, match] of matches) {
-            match.simulate(CONSTS.WORLD_UPDATE_S)
-        }
-        // console.log(getElapsedTime())
-        await new Promise(r => setTimeout(r, CONSTS.WORLD_UPDATE_MS))
+    console.log(Date.now() - last)
+    last = Date.now()
+    for (const [id, match] of matches) {
+        match.simulate(CONSTS.WORLD_UPDATE_S)
     }
+    // console.log(getElapsedTime())
+    // await new Promise(r => setTimeout(r, CONSTS.WORLD_UPDATE_MS))
 }
 
-async function sendUpdateLoop(
+function sendUpdate(
     matches: Map<string, Match>,
 ) {
-    while (true) {
-        for (const m of matches.values()) {
-            const units = m.consumeUpdatedUnits()
-            if (units.length == 0) {
-                continue
-            }
-            const obj = new MSGOBJS.ServerUnitsUpdate(units)
-            const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
-            m.client1Socket.socket.send(bytes)
-            m.client2Socket.socket.send(bytes)
+    for (const m of matches.values()) {
+        const units = m.consumeUpdatedUnits()
+        if (units.length == 0) {
+            continue
         }
-        await new Promise(r => setTimeout(r, CONSTS.SERVER_SEND_MS))
+        const obj = new MSGOBJS.ServerUnitsUpdate(units)
+        const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
+        m.client1Socket.socket.send(bytes)
+        m.client2Socket.socket.send(bytes)
     }
 }
 

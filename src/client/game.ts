@@ -134,7 +134,10 @@ export class GameInstance {
         }
     }
 
+    last = Date.now()
     private moveUnits() {
+        console.log(Date.now() - this.last)
+        this.last = Date.now()
         for (const u of this.selfUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
             SIMULATION.moveUnit(u.data)
@@ -177,6 +180,10 @@ export class GameInstance {
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (unit != undefined) {
                 unit.data.movingTo = updatedUnit.movingTo
+                const difference = Vec2.squareLengthOf(Vec2.sub(unit.data.position, updatedUnit.position))
+                if (difference > 10 * 10) {
+                    unit.data.position = updatedUnit.position
+                }
             }
         }
     }
