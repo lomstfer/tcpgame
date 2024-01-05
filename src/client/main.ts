@@ -6,7 +6,7 @@ import * as GAME from "./game.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://151.177.146.116:80")
+const websocket = new WebSocket("ws://80.217.247.83:80")
 NET.handleNetworking(websocket)
 
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
@@ -101,7 +101,7 @@ pixiApp.ticker.add(() => {
         timeEl.textContent = (NET.getMatchTimeMS() / 1000).toFixed(1)
     }
 
-    game?.update(dt, keyInput)
+    game?.update(dt, NET.getMatchTimeMS(), keyInput)
     accumulator += dt
     while (accumulator >= CONSTS.WORLD_UPDATE_S) {
         game?.fixedUpdate()
@@ -125,6 +125,6 @@ NET.netEventEmitter.on("spawnServerUnitSelf", unit => {
 NET.netEventEmitter.on("spawnServerUnitOther", unit => {
     game?.spawnUnitOther(unit)
 })
-NET.netEventEmitter.on("serverUnitsUpdate", units => {
-    game?.handleServerUpdate(units)
+NET.netEventEmitter.on("serverUnitsUpdate", data => {
+    game?.handleServerUpdate(data[0], data[1])
 })

@@ -7,6 +7,7 @@ export class ServerTimeSyncer {
 
     handleServerTimeUpdate(clientTime: number, serverTime: number) {
         const latency = (Date.now() - clientTime) / 2
+        console.log(latency)
         this.latencyArray.push(latency)
         
         let difference: number = Date.now() - (serverTime + latency)

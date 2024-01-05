@@ -7,10 +7,10 @@ export function moveUnit(unit: Unit) {
         return
     }
     let d = Vec2.sub(unit.movingTo, unit.position)
-    if (Vec2.lengthOf(d) < 5) {
+    if (Vec2.squareLengthOf(d) < 5 * 5) {
         return
     }
     d = Vec2.normalize(d)
     unit.position = Vec2.add(unit.position, Vec2.multiply(d, CONSTS.UNIT_SPEED * CONSTS.WORLD_UPDATE_S))
-    console.log(unit.position)
+    // console.log(unit.position)
 }

@@ -65,7 +65,9 @@ export class ClientMoveUnits {
 
 export class ServerUnitsUpdate {
     units: Unit[]
-    constructor(units: Unit[]) {
+    time: number
+    constructor(units: Unit[], time: number) {
         this.units = units
+        this.time = time
     }
 }

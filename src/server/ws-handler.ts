@@ -12,9 +12,7 @@ import { WebSocketWithId } from "./match.js"
 import { MatchData } from "../shared/matchData.js"
 import { Unit } from "../shared/unit.js"
 import NanoTimer from "nanotimer"
-
-const generalUpdateWait = 1 / 5
-const checkAndSendUpdateWait = 1 / 20
+import * as SCONSTS from "./serverConstants.js"
 
 const startTime = Date.now()
 function getElapsedTime() {
@@ -22,14 +20,16 @@ function getElapsedTime() {
 }
 
 export function handleWS(server: Server) {
-    let sockets = new Map<string, WebSocket>()
-    let clientsInMatchFinder: Map<string, ClientInfo> = new Map<string, ClientInfo>()
-    let ongoingMatches = new Map<string, Match>()
-    let clientIdsToMatches = new Map<string, Match>()
+    const generalUpdateWait = 1 / 5
+    const checkAndSendUpdateWait = 1 / 30
 
     const ws = new WebSocketServer({
         server: server
     })
+    const sockets = new Map<string, WebSocket>()
+    const clientsInMatchFinder: Map<string, ClientInfo> = new Map<string, ClientInfo>()
+    const ongoingMatches = new Map<string, Match>()
+    const clientIdsToMatches = new Map<string, Match>()
 
     ws.on('connection', (newSock, r) => {
         console.log("connection")
@@ -74,8 +74,8 @@ export function handleWS(server: Server) {
                     if (msgObj == undefined) {
                         break
                     }
-                    console.log(msgObj.unitIds)
                     setUnitsOnTheMove(msgObj.unitIds, msgObj.position, clientIdsToMatches, clientId)
+                    sendUpdate(ongoingMatches)
                     break
                 }
             }
@@ -106,10 +106,10 @@ export function handleWS(server: Server) {
         matchmakeUpdate(sockets, clientsInMatchFinder, ongoingMatches, clientIdsToMatches)
     }, "", generalUpdateWait.toString() + "s")
 
-    const sendTimer = new NanoTimer()
+    /* const sendTimer = new NanoTimer()
     sendTimer.setInterval(() => {
         sendUpdate(ongoingMatches)
-    }, "", checkAndSendUpdateWait.toString() + "s")
+    }, "", checkAndSendUpdateWait.toString() + "s") */
 }
 
 function handleNewClient(
@@ -151,9 +151,9 @@ function matchmakeUpdate(
         // m.ready()
 
         const timeNow = getElapsedTime()
-        const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, timeNow, false))
+        const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, m.timeStarted, false))
         m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo1))
-        const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, timeNow, true))
+        const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, m.timeStarted, true))
         m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverFoundMatch, objTo2))
 
         ongoingMatches.set(m.id, m)
@@ -202,7 +202,7 @@ function consumeClientsFromMatchFinder(
             continue
         }
 
-        let newMatch = new Match(SUTILS.generateRandomID(), new WebSocketWithId(socket1, last[0]), new WebSocketWithId(socket2, idOfCurrent), last[1], client)
+        let newMatch = new Match(SUTILS.generateRandomID(), getElapsedTime(), new WebSocketWithId(socket1, last[0]), new WebSocketWithId(socket2, idOfCurrent), last[1], client)
         output.push(newMatch)
 
         clientsInMatchFinder.delete(last[0])
@@ -214,12 +214,9 @@ function consumeClientsFromMatchFinder(
     return output
 }
 
-let last = Date.now()
 function worldUpdate(
     matches: Map<string, Match>,
 ) {
-    console.log(Date.now() - last)
-    last = Date.now()
     for (const [id, match] of matches) {
         match.simulate(CONSTS.WORLD_UPDATE_S)
     }
@@ -235,7 +232,7 @@ function sendUpdate(
         if (units.length == 0) {
             continue
         }
-        const obj = new MSGOBJS.ServerUnitsUpdate(units)
+        const obj = new MSGOBJS.ServerUnitsUpdate(units, m.getMatchTime(getElapsedTime()) + SCONSTS.INPUT_DELAY)
         const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
         m.client1Socket.socket.send(bytes)
         m.client2Socket.socket.send(bytes)

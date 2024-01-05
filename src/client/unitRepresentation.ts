@@ -28,9 +28,10 @@ export class UnitRepresentation {
         this.body.tint = color
 
         this.border = new PIXI.Graphics()
-        this.border.lineStyle(3, COLORS.SELECTED_UNIT_BORDER_COLOR)
+        this.border.lineStyle(3, 0xffffff)
         this.border.drawRect(0, 0, width, height)
         this.border.visible = false
+        this.border.tint = COLORS.SELECTED_UNIT_BORDER_COLOR
     
         this.body.addChild(this.border)
     }

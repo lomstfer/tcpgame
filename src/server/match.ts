@@ -7,6 +7,8 @@ import * as SUTILS from "./serverUtils.js"
 import { Unit } from "../shared/unit.js"
 import * as CONSTS from "../shared/constants.js"
 import * as SIMULATION from "../shared/simulation.js"
+import lodash from "lodash"
+import * as SCONSTS from "./serverConstants.js"
 
 export class WebSocketWithId {
     socket: WebSocket
@@ -30,13 +32,20 @@ export class Match {
 
     private unitsUpdated = new Array<Unit>()
 
-    constructor(id: string, client1Socket: WebSocketWithId, client2Socket: WebSocketWithId, client1Info: ClientInfo, client2Info: ClientInfo) {
+    timeStarted: number
+
+    constructor(id: string, timeStarted: number, client1Socket: WebSocketWithId, client2Socket: WebSocketWithId, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
+        this.timeStarted = timeStarted
 
         this.client1Socket = client1Socket
         this.client2Socket = client2Socket
         this.client1Info = client1Info
         this.client2Info = client2Info
+    }
+
+    getMatchTime(currentTime: number): number {
+        return currentTime - this.timeStarted
     }
 
     simulate(deltaTime: number) {
@@ -61,7 +70,7 @@ export class Match {
 
     spawnUnit(ownerId: string, position: Vec2) {
         const unit = new Unit(SUTILS.generateRandomID(), position)
-        
+
         const selfBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverSpawnUnitSelf, new MSGOBJS.ServerSpawnUnitSelf(unit))
         const otherBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverSpawnUnitOther, new MSGOBJS.ServerSpawnUnitOther(unit))
 
@@ -87,13 +96,19 @@ export class Match {
         if (unit == undefined) {
             return
         }
-        unit.movingTo = new Vec2(here.x, here.y)
-        this.unitsUpdated.push(unit)
+
+        const updatedUnit = lodash.cloneDeep(unit)
+        updatedUnit.movingTo = new Vec2(here.x, here.y)
+        this.unitsUpdated.push(updatedUnit)
+
+        const start = Date.now()
+        setTimeout(() => {
+            console.log("now!", Date.now() - start)
+            unit.movingTo = new Vec2(here.x, here.y) 
+        }, SCONSTS.INPUT_DELAY)
     }
 
     consumeUpdatedUnits(): Unit[] {
-        const copy = [...this.unitsUpdated]
-        this.unitsUpdated = []
-        return copy
+        return this.unitsUpdated.splice(0, this.unitsUpdated.length)
     }
 }

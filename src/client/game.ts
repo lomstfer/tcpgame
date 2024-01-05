@@ -97,7 +97,7 @@ export class GameInstance {
     }
 
 
-    update(deltaTime: number, keys: KeyInput) {
+    update(deltaTime: number, time: number, keys: KeyInput) {
         this.camera.update(deltaTime, keys)
         this.mouseWorldPosition = this.camera.getMouseWorldPosition(this.mouseCanvasPosition, this.appStage)
 
@@ -134,10 +134,7 @@ export class GameInstance {
         }
     }
 
-    last = Date.now()
     private moveUnits() {
-        console.log(Date.now() - this.last)
-        this.last = Date.now()
         for (const u of this.selfUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
             SIMULATION.moveUnit(u.data)
@@ -175,7 +172,14 @@ export class GameInstance {
         this.otherUnits.set(unitR.data.id, unitR)
     }
 
-    handleServerUpdate(units: Unit[]) {
+    handleServerUpdate(units: Unit[], timeUntilExecute: number) {
+        // console.log(timeUntilExecute)
+        const now = Date.now()
+        setTimeout(() => { this.enforceServerUpdate(units, now) }, timeUntilExecute)
+    }
+
+    private enforceServerUpdate(units: Unit[], start: number) {
+        console.log("now!", Date.now() - start)
         for (const updatedUnit of units) {
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (unit != undefined) {
