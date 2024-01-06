@@ -5,10 +5,12 @@ import { prependUint8 } from "../shared/utils.js"
 // maximum of 256 messageids
 export enum MessageID {
     serverConnectionAck,
-    clientEnterMatchFinder,
-    serverFoundMatch,
     clientTimeRequest,
     serverTimeAnswer,
+    serverPing,
+    clientPong,
+    clientEnterMatchFinder,
+    serverFoundMatch,
     serverOpponentDisconnected,
     clientSpawnUnit,
     serverSpawnUnitSelf,

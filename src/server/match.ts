@@ -9,6 +9,8 @@ import * as CONSTS from "../shared/constants.js"
 import * as SIMULATION from "../shared/simulation.js"
 import lodash from "lodash"
 import * as SCONSTS from "./serverConstants.js"
+import { SocketData } from './socketData.js'
+import NanoTimer from 'nanotimer'
 
 export class WebSocketWithId {
     socket: WebSocket
@@ -22,8 +24,8 @@ export class WebSocketWithId {
 export class Match {
     id: string
 
-    client1Socket: WebSocketWithId
-    client2Socket: WebSocketWithId
+    client1Socket: SocketData
+    client2Socket: SocketData
     client1Info: ClientInfo
     client2Info: ClientInfo
 
@@ -34,7 +36,9 @@ export class Match {
 
     timeStarted: number
 
-    constructor(id: string, timeStarted: number, client1Socket: WebSocketWithId, client2Socket: WebSocketWithId, client1Info: ClientInfo, client2Info: ClientInfo) {
+    nanoTimer = new NanoTimer()
+
+    constructor(id: string, timeStarted: number, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
         this.timeStarted = timeStarted
 
@@ -101,14 +105,42 @@ export class Match {
         updatedUnit.movingTo = new Vec2(here.x, here.y)
         this.unitsUpdated.push(updatedUnit)
 
-        const start = Date.now()
-        setTimeout(() => {
+        const delay = this.getInputDelay()
+
+        const start = Date.now();
+        (new NanoTimer()).setTimeout(() => {
             console.log("now!", Date.now() - start)
             unit.movingTo = new Vec2(here.x, here.y) 
-        }, SCONSTS.INPUT_DELAY)
+        }, "", delay.toString() + "m")
     }
 
     consumeUpdatedUnits(): Unit[] {
         return this.unitsUpdated.splice(0, this.unitsUpdated.length)
+    }
+
+    getHighestPing(): number | undefined {
+        if (this.client1Socket.ping == undefined || this.client2Socket.ping == undefined) {
+            return
+        }
+        if (this.client1Socket.ping >= this.client2Socket.ping) {
+            return this.client1Socket.ping
+        }
+        return this.client2Socket.ping
+    }
+
+    getHighestOneWayLatency(): number | undefined {
+        const ping = this.getHighestPing()
+        if (ping != undefined) {
+            return ping / 2
+        }
+        return undefined
+    }
+
+    getInputDelay(): number {
+        /* let delay = this.getHighestPing()
+        if (delay == undefined || delay < SCONSTS.INPUT_DELAY_MINIMUM_MS) {
+            return SCONSTS.INPUT_DELAY_MINIMUM_MS
+        } */
+        return /* delay */SCONSTS.INPUT_DELAY_MINIMUM_MS
     }
 }

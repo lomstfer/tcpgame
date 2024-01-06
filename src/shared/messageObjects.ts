@@ -33,6 +33,20 @@ export class ServerTimeAnswer {
     }
 }
 
+export class ServerPing {
+    sentFromServerTime: number
+    constructor(sentFromServerTime: number) {
+        this.sentFromServerTime = sentFromServerTime
+    }
+}
+
+export class ClientPong {
+    sentFromServerTime: number
+    constructor(sentFromServerTime: number) {
+        this.sentFromServerTime = sentFromServerTime
+    }
+}
+
 export class ClientSpawnUnitRequest {
     position: Vec2
     constructor(position: Vec2) {
@@ -65,9 +79,9 @@ export class ClientMoveUnits {
 
 export class ServerUnitsUpdate {
     units: Unit[]
-    time: number
+    timeToUpdate: number
     constructor(units: Unit[], time: number) {
         this.units = units
-        this.time = time
+        this.timeToUpdate = time
     }
 }

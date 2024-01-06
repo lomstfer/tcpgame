@@ -15,14 +15,12 @@ export class ServerTimeSyncer {
         if (this.latencyArray.length > 10 && !this.timeSynced) {
             this.latencyArray.sort((a, b) => a - b)
             const median = UTILS.getMedian(this.latencyArray)
-            const standardDiff = UTILS.getAverageDiffFromMedian(this.latencyArray, median)
-            const resultArray = this.latencyArray.filter((v) => Math.abs(v - median) < standardDiff)
+            const avgDiff = UTILS.getAverageDiffFromMedian(this.latencyArray, median)
+            const resultArray = this.latencyArray.filter((v) => Math.abs(v - median) <= avgDiff)
             const average = UTILS.getAverage(resultArray)
-    
-            // console.log(this.latencyArray, resultArray, standardDiff, average)
             
             difference = Date.now() - (serverTime + average)
-            if (standardDiff < 700) {
+            if (avgDiff < 700) {
                 this.timeSynced = true
             }
         }

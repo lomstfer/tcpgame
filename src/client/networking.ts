@@ -42,6 +42,13 @@ export function handleNetworking(ws: WebSocket) {
                 }, 200)
                 break
             }
+            case MSG.MessageID.serverPing: {
+                const sentTime = MSG.getObjectFromBytes<MSGOBJS.ServerPing>(bytes).sentFromServerTime
+                const obj = new MSGOBJS.ClientPong(sentTime)
+                ws.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.clientPong, obj))
+                console.log("time d:", serverTimeSyncer.getServerTime() - sentTime)
+                break
+            }
             case MSG.MessageID.serverTimeAnswer: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerTimeAnswer>(bytes)
                 serverTimeSyncer.handleServerTimeUpdate(msgObj.clientTime, msgObj.serverTime)
@@ -71,7 +78,7 @@ export function handleNetworking(ws: WebSocket) {
             }
             case MSG.MessageID.serverUnitsUpdate: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerUnitsUpdate>(bytes)
-                netEventEmitter.emit("serverUnitsUpdate", [msgObj.units, msgObj.time - getMatchTimeMS()])
+                netEventEmitter.emit("serverUnitsUpdate", [msgObj.units, msgObj.timeToUpdate - getMatchTimeMS()])
                 break
             }
         }

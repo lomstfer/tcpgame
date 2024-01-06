@@ -13,6 +13,7 @@ import { MatchData } from "../shared/matchData.js"
 import { Unit } from "../shared/unit.js"
 import NanoTimer from "nanotimer"
 import * as SCONSTS from "./serverConstants.js"
+import { SocketData } from "./socketData.js"
 
 const startTime = Date.now()
 function getElapsedTime() {
@@ -21,12 +22,12 @@ function getElapsedTime() {
 
 export function handleWS(server: Server) {
     const generalUpdateWait = 1 / 5
-    const checkAndSendUpdateWait = 1 / 30
+    const pingWait = 1
 
     const ws = new WebSocketServer({
         server: server
     })
-    const sockets = new Map<string, WebSocket>()
+    const sockets = new Map<string, SocketData>()
     const clientsInMatchFinder: Map<string, ClientInfo> = new Map<string, ClientInfo>()
     const ongoingMatches = new Map<string, Match>()
     const clientIdsToMatches = new Map<string, Match>()
@@ -52,6 +53,11 @@ export function handleWS(server: Server) {
                     newSock.send(answerBytes)
                     break
                 }
+                case MSG.MessageID.clientPong: {
+                    const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientPong>(bytes)
+                    sockets.get(clientId)?.handleClientPong(msgObj.sentFromServerTime, getElapsedTime())
+                    break
+                }
                 case MSG.MessageID.clientEnterMatchFinder: {
                     console.log("clientEnterMatchFinder")
                     const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientEnterMatchFinder>(bytes)
@@ -74,8 +80,9 @@ export function handleWS(server: Server) {
                     if (msgObj == undefined) {
                         break
                     }
+
                     setUnitsOnTheMove(msgObj.unitIds, msgObj.position, clientIdsToMatches, clientId)
-                    sendUpdate(ongoingMatches)
+                    sendUnitUpdate(clientIdsToMatches.get(clientId))
                     break
                 }
             }
@@ -110,16 +117,28 @@ export function handleWS(server: Server) {
     sendTimer.setInterval(() => {
         sendUpdate(ongoingMatches)
     }, "", checkAndSendUpdateWait.toString() + "s") */
+
+    const pingTimer = new NanoTimer()
+    pingTimer.setInterval(() => {
+        sendPings(sockets)
+    }, "", pingWait.toString() + "s")
 }
 
 function handleNewClient(
     newSocket: WebSocket,
-    sockets: Map<string, WebSocket>,
+    sockets: Map<string, SocketData>,
     id: string
 ) {
-    sockets.set(id, newSocket)
+    sockets.set(id, new SocketData(newSocket, id))
     let bytes = MSG.getByteFromMessage(MSG.MessageID.serverConnectionAck)
     newSocket.send(bytes)
+}
+
+function sendPings(sockets: Map<string, SocketData>) {
+    for (const s of sockets.values()) {
+        const obj = new MSGOBJS.ServerPing(getElapsedTime())
+        s.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.serverPing, obj))
+    }
 }
 
 function addClientToMatchFinder(
@@ -134,7 +153,7 @@ function addClientToMatchFinder(
 }
 
 function matchmakeUpdate(
-    sockets: Map<string, WebSocket>,
+    sockets: Map<string, SocketData>,
     clientsInMatchFinder: Map<string, ClientInfo>,
     ongoingMatches: Map<string, Match>,
     clientIdsToMatches: Map<string, Match>
@@ -177,7 +196,7 @@ function matchmakeUpdate(
 
 function consumeClientsFromMatchFinder(
     clientsInMatchFinder: Map<string, ClientInfo>,
-    sockets: Map<string, WebSocket>
+    sockets: Map<string, SocketData>
 ): Match[] {
     let output: Match[] = []
 
@@ -202,7 +221,7 @@ function consumeClientsFromMatchFinder(
             continue
         }
 
-        let newMatch = new Match(SUTILS.generateRandomID(), getElapsedTime(), new WebSocketWithId(socket1, last[0]), new WebSocketWithId(socket2, idOfCurrent), last[1], client)
+        let newMatch = new Match(SUTILS.generateRandomID(), getElapsedTime(), socket1, socket2, last[1], client)
         output.push(newMatch)
 
         clientsInMatchFinder.delete(last[0])
@@ -224,19 +243,24 @@ function worldUpdate(
     // await new Promise(r => setTimeout(r, CONSTS.WORLD_UPDATE_MS))
 }
 
-function sendUpdate(
-    matches: Map<string, Match>,
+function sendUnitUpdate(
+    match: Match | undefined,
 ) {
-    for (const m of matches.values()) {
-        const units = m.consumeUpdatedUnits()
-        if (units.length == 0) {
-            continue
-        }
-        const obj = new MSGOBJS.ServerUnitsUpdate(units, m.getMatchTime(getElapsedTime()) + SCONSTS.INPUT_DELAY)
-        const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
-        m.client1Socket.socket.send(bytes)
-        m.client2Socket.socket.send(bytes)
+    if (match == undefined) {
+        return
     }
+    const units = match.consumeUpdatedUnits()
+    if (units.length == 0) {
+        return
+    }
+
+    const delay = match.getInputDelay()
+    console.log("delay:", delay)
+    
+    const obj = new MSGOBJS.ServerUnitsUpdate(units, match.getMatchTime(getElapsedTime()) + delay)
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
+    match.client1Socket.socket.send(bytes)
+    match.client2Socket.socket.send(bytes)
 }
 
 function spawnUnitInMatch(position: Vec2, clientIdsToMatches: Map<string, Match>, clientId: string) {

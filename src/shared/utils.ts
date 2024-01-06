@@ -1,6 +1,6 @@
 import * as PIXI from "pixi.js"
 
-export function getAverage(array: any[]) {
+export function getAverage(array: number[]): number {
     let sum = 0
     for (const v of array) {
         sum += v
@@ -8,7 +8,7 @@ export function getAverage(array: any[]) {
     return sum / array.length
 }
 
-export function getMedian(sortedArray: any[]) {
+export function getMedian(sortedArray: number[]): number {
     if (sortedArray.length % 2 == 0) {
         const first = sortedArray[sortedArray.length / 2 - 1]
         const second = sortedArray[sortedArray.length / 2]
@@ -17,13 +17,20 @@ export function getMedian(sortedArray: any[]) {
     return sortedArray[Math.floor(sortedArray.length / 2)]
 }
 
-export function getAverageDiffFromMedian(sortedArray: number[], median: number) {
+export function getAverageDiffFromMedian(array: number[], median: number): number {
     let sum = 0
-    for (const n of sortedArray) {
+    for (const n of array) {
         sum += Math.abs(n - median)
     }
-    const average = sum / sortedArray.length
+    const average = sum / array.length
     return average
+}
+
+export function getAverageCloseToMedian(array: number[], amountOfAvgDiffsAway: number): number {
+    const median = getMedian(array)
+    const avgDiff = getAverageDiffFromMedian(array, median)
+    const resultArray = array.filter((v) => Math.abs(v - median) <= avgDiff * amountOfAvgDiffsAway)
+    return getAverage(resultArray)
 }
 
 export function prependUint8(byte: number, array: Uint8Array): Uint8Array {
@@ -58,15 +65,15 @@ export class Vec2 {
     static sub(vec: Vec2, other: Vec2): Vec2 {
         return new Vec2(vec.x - other.x, vec.y - other.y)
     }
-    
+
     static multiply(vec: Vec2, scalar: number): Vec2 {
         return new Vec2(vec.x * scalar, vec.y * scalar)
     }
-    
+
     static divide(vec: Vec2, scalar: number): Vec2 {
         return new Vec2(vec.x / scalar, vec.y / scalar)
     }
-    
+
     static normalize(vec: Vec2): Vec2 {
         let len = Math.sqrt(vec.x * vec.x + vec.y * vec.y)
         if (len == 0) {
@@ -74,7 +81,7 @@ export class Vec2 {
         }
         return new Vec2(vec.x / len, vec.y / len)
     }
-    
+
     static lengthOf(vec: Vec2): number {
         return Math.sqrt(vec.x * vec.x + vec.y * vec.y)
     }

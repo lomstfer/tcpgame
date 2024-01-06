@@ -182,22 +182,41 @@ export class GameInstance {
     }
 
     handleServerUpdate(units: Unit[], timeUntilExecute: number) {
+        console.log("exe:", timeUntilExecute)
+        let doTimeout = true
         for (const updatedUnit of units) {
+            if (updatedUnit.movingTo == undefined) {
+                console.log("updatedUnit.movingTo == undefined   (WHAT)")
+                continue
+            }
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
-            if (unit != undefined) {
-                const difference = Vec2.squareLengthOf(Vec2.sub(unit.data.position, updatedUnit.position))
-                if (difference > 10 * 10) {
-                    unit.data.position = updatedUnit.position
-                    unit.data.movingTo = undefined
-                }
+            if (unit == undefined) {
+                continue
+            }
+
+            const diff = Vec2.squareLengthOf(Vec2.sub(unit.data.position, updatedUnit.position))
+            if (diff > 10 * 10) {
+                unit.data.position = updatedUnit.position
+                console.log("DIFF CORRECTION")
+            }
+
+            if (timeUntilExecute < 0) {
+                doTimeout = false
+                const timeIntoMove = -timeUntilExecute
+                const totalDistance = Vec2.lengthOf(Vec2.sub(updatedUnit.position, updatedUnit.movingTo))
+                const distanceIntoMove = timeIntoMove * 0.001 * CONSTS.UNIT_SPEED
+                const ratio = distanceIntoMove / totalDistance
+                unit.data.position = Vec2.Lerp(updatedUnit.position, updatedUnit.movingTo, ratio)
+                unit.data.movingTo = updatedUnit.movingTo
             }
         }
-        const now = Date.now()
-        setTimeout(() => { this.enforceServerUpdate(units, now) }, timeUntilExecute)
+        if (doTimeout) {
+            const now = Date.now()
+            setTimeout(() => { this.enforceServerUpdate(units, now) }, timeUntilExecute)
+        }
     }
 
     private enforceServerUpdate(units: Unit[], start: number) {
-        console.log("now!", Date.now() - start)
         for (const updatedUnit of units) {
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (unit != undefined) {
