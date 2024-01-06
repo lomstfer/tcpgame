@@ -4,10 +4,15 @@
     box-sizing: border-box;
     --scale: calc((1vw + 1vh)/2);
     user-select: none;
+    pointer-events: none;
 }
 
 body {
     overflow: hidden;
+}
+
+canvas {
+    pointer-events: initial;
 }
 
 #game-ui {
@@ -54,8 +59,6 @@ body {
     height: fit-content;
     display: flex;
     justify-content: center;
-
-    pointer-events: none;
 }
 
 #inventory {

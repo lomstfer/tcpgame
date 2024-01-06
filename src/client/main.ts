@@ -6,7 +6,7 @@ import * as GAME from "./game.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://80.217.247.83:80")
+const websocket = new WebSocket("ws://83.253.189.120:80")
 NET.handleNetworking(websocket)
 
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({

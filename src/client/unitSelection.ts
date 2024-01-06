@@ -21,6 +21,10 @@ export class UnitSelection {
         this.sprite.tint = COLORS.UNIT_SELECTION_COLOR
         this.sprite.alpha = 0.3
         this.sprite.zIndex = 1
+
+        window.addEventListener("mouseout", () => {
+            this.end()
+        })
     }
 
     begin(mouseDownPosition: Vec2) {
@@ -30,8 +34,8 @@ export class UnitSelection {
         this.sprite.visible = true
     }
 
-    update(mousePosition: Vec2, mouseDown: boolean, selectableUnits: Map<string, UnitRepresentation>) {
-        if (!mouseDown || this.mouseDownPosition == undefined) {
+    update(mousePosition: Vec2 | undefined, mouseDown: boolean, selectableUnits: Map<string, UnitRepresentation>) {
+        if (!mouseDown || this.mouseDownPosition == undefined || !mousePosition) {
             return
         }
         let diff = new Vec2(mousePosition.x - this.mouseDownPosition.x, mousePosition.y - this.mouseDownPosition.y)

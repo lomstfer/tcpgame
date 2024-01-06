@@ -27,10 +27,9 @@ export class GameInstance {
 
     private camera = new Camera()
 
-    private moveToPosition: Vec2 | undefined = undefined
     private mouseDown = false
-    private mouseWorldPosition = new Vec2(0, 0)
-    private mouseCanvasPosition = new Vec2(0, 0)
+    private mouseWorldPosition: Vec2 | undefined = undefined
+    private mouseCanvasPosition: Vec2 | undefined = undefined
 
     private unitSelection: UnitSelection
     private grid = new Grid()
@@ -78,6 +77,11 @@ export class GameInstance {
             this.mouseWorldPosition = this.camera.getMouseWorldPosition(e.client, this.appStage)
             this.mouseCanvasPosition = new Vec2(e.client.x, e.client.y)
         })
+        window.addEventListener("mouseout", () => {
+            this.mouseCanvasPosition = undefined
+            this.mouseWorldPosition = undefined
+            this.mouseDown = false
+        })
 
         /* {
         const inventorySlots = document.getElementById("inventory-slots")
@@ -99,18 +103,23 @@ export class GameInstance {
 
     update(deltaTime: number, time: number, keys: KeyInput) {
         this.camera.update(deltaTime, keys)
-        this.mouseWorldPosition = this.camera.getMouseWorldPosition(this.mouseCanvasPosition, this.appStage)
-
-        this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
-        this.grid.update(this.camera.worldPosition)
-
-        if (keys.keyPressed("KeyR")) {
-            gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
-            this.spawnUnitSelfUnconfirmed(this.mouseWorldPosition)
+        if (this.mouseCanvasPosition) {
+            this.mouseWorldPosition = this.camera.getMouseWorldPosition(this.mouseCanvasPosition, this.appStage)
         }
 
-        if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
-            gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.selectedUnits, this.mouseWorldPosition])
+        this.grid.update(this.camera.worldPosition)
+
+        this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
+        if (this.mouseWorldPosition) {
+
+            if (keys.keyPressed("KeyR")) {
+                gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
+                this.spawnUnitSelfUnconfirmed(this.mouseWorldPosition)
+            }
+
+            if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
+                gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.selectedUnits, this.mouseWorldPosition])
+            }
         }
 
         if (this.worldRoot) {
@@ -173,7 +182,16 @@ export class GameInstance {
     }
 
     handleServerUpdate(units: Unit[], timeUntilExecute: number) {
-        // console.log(timeUntilExecute)
+        for (const updatedUnit of units) {
+            const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
+            if (unit != undefined) {
+                const difference = Vec2.squareLengthOf(Vec2.sub(unit.data.position, updatedUnit.position))
+                if (difference > 10 * 10) {
+                    unit.data.position = updatedUnit.position
+                    unit.data.movingTo = undefined
+                }
+            }
+        }
         const now = Date.now()
         setTimeout(() => { this.enforceServerUpdate(units, now) }, timeUntilExecute)
     }
@@ -184,10 +202,6 @@ export class GameInstance {
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (unit != undefined) {
                 unit.data.movingTo = updatedUnit.movingTo
-                const difference = Vec2.squareLengthOf(Vec2.sub(unit.data.position, updatedUnit.position))
-                if (difference > 10 * 10) {
-                    unit.data.position = updatedUnit.position
-                }
             }
         }
     }
