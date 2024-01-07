@@ -209,8 +209,6 @@ export class GameInstance {
     timeSinceLastUpdate: number | undefined
     lastUpdateTime: number | undefined
     private enforceServerUpdate(units: Unit[], timeSinceSent: number) {
-        console.log("SHOULDHAP", timeSinceSent)
-
         if (this.lastUpdateTime) {
             this.timeSinceLastUpdate = Date.now() - this.lastUpdateTime
         }
@@ -219,7 +217,7 @@ export class GameInstance {
         for (const updatedUnit of units) {
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (unit != undefined) {
-                if (unit.data.movingTo != undefined && // prevents spam move command bug (jumps forward too much)
+                /* if (unit.data.movingTo != undefined &&
                     ((this.timeSinceLastUpdate && this.timeSinceLastUpdate > timeSinceSent) || !this.timeSinceLastUpdate)
                 ) {
                     // take into account that the updated data is old
@@ -232,7 +230,7 @@ export class GameInstance {
                         unit.data.position = prediction
                         console.log("DIFF CORRECTION")
                     }
-                }
+                } */
 
                 unit.data.movingTo = updatedUnit.movingTo
             }

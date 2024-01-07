@@ -17,5 +17,14 @@ export function moveUnit(unit: Unit) {
     }
     d = Vec2.normalize(d)
     unit.position = Vec2.add(unit.position, Vec2.multiply(d, CONSTS.UNIT_SPEED * CONSTS.WORLD_UPDATE_S))
-    console.log(unit.position.x, unit.position.y)
+    // console.log(unit.position.x, unit.position.y)
+}
+
+export function getMoveToInGroup(clickPosition: Vec2, thisUnit: Unit, units: Unit[]): Vec2 {
+    for (const unit of units) {
+        if (unit == thisUnit) {
+            console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        }
+    }
+    return clickPosition
 }

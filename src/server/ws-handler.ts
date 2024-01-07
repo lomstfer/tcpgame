@@ -249,7 +249,7 @@ function sendUnitUpdate(
     if (match == undefined) {
         return
     }
-    const units = match.consumeUpdatedUnits()
+    const units = match.consumeAlreadyUpdatedUnits()
     if (units.length == 0) {
         return
     }
@@ -275,5 +275,5 @@ function setUnitsOnTheMove(unitIds: string[], toPosition: Vec2, clientIdsToMatch
     if (match == undefined) {
         return
     }
-    unitIds.forEach(unitId => match.moveUnit(unitId, toPosition))
+    match.moveUnits(unitIds, toPosition)
 }

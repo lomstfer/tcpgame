@@ -95,26 +95,36 @@ export class Match {
         this.client2Socket.socket.send(bytes)
     }
 
-    moveUnit(id: string, here: Vec2) {
-        const unit = this.client1Units.get(id) || this.client2Units.get(id)
-        if (unit == undefined) {
-            return
+    moveUnits(unitIds: string[], here: Vec2) {
+        const units: Unit[] = []
+        let averagePosition: Vec2 = new Vec2(0, 0)
+        for (const id of unitIds) {
+            const unit = this.client1Units.get(id) || this.client2Units.get(id)
+            if (unit != undefined) {
+                units.push(unit)
+                averagePosition = Vec2.add(averagePosition, unit.position)
+            }
+        }
+        averagePosition = Vec2.divide(averagePosition, units.length)
+
+        for (const unit of units) {
+            const updatedUnit = lodash.cloneDeep(unit)
+            const moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.multiply(Vec2.sub(updatedUnit.position, averagePosition), 0.5))
+            updatedUnit.movingTo = moveTo
+            this.unitsUpdated.push(updatedUnit)
+    
+            const delay = this.getInputDelay()
+    
+            const start = Date.now();
+            (new NanoTimer()).setTimeout(() => {
+                console.log("now!", Date.now() - start)
+                unit.movingTo = moveTo
+            }, "", delay.toString() + "m")
         }
 
-        const updatedUnit = lodash.cloneDeep(unit)
-        updatedUnit.movingTo = new Vec2(here.x, here.y)
-        this.unitsUpdated.push(updatedUnit)
-
-        const delay = this.getInputDelay()
-
-        const start = Date.now();
-        (new NanoTimer()).setTimeout(() => {
-            console.log("now!", Date.now() - start)
-            unit.movingTo = new Vec2(here.x, here.y) 
-        }, "", delay.toString() + "m")
     }
 
-    consumeUpdatedUnits(): Unit[] {
+    consumeAlreadyUpdatedUnits(): Unit[] {
         return this.unitsUpdated.splice(0, this.unitsUpdated.length)
     }
 

@@ -98,5 +98,15 @@ export class Vec2 {
     static LerpUnclamped(p0: Vec2, p1: Vec2, t: number): Vec2 {
         return new Vec2(p0.x + (p1.x - p0.x) * t, p0.y + (p1.y - p0.y) * t)
     }
+
+    /* static minLength(vec: Vec2, minimum: number): Vec2 {
+        let lenSqr = vec.x * vec.x + vec.y * vec.y
+        if (lenSqr == 0) {
+            return vec
+        }
+        else if (lenSqr < minimum ** 2) {
+
+        }
+    } */
 }
 
