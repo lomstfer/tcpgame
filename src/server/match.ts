@@ -137,10 +137,10 @@ export class Match {
     }
 
     getInputDelay(): number {
-        /* let delay = this.getHighestPing()
+        let delay = this.getHighestPing()
         if (delay == undefined || delay < SCONSTS.INPUT_DELAY_MINIMUM_MS) {
             return SCONSTS.INPUT_DELAY_MINIMUM_MS
-        } */
-        return /* delay */SCONSTS.INPUT_DELAY_MINIMUM_MS
+        }
+        return delay/* SCONSTS.INPUT_DELAY_MINIMUM_MS */
     }
 }

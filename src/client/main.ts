@@ -6,7 +6,7 @@ import * as GAME from "./game.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://192.168.1.227:80")
+const websocket = new WebSocket("ws://151.177.149.59:80")
 NET.handleNetworking(websocket)
 
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
@@ -126,5 +126,5 @@ NET.netEventEmitter.on("spawnServerUnitOther", unit => {
     game?.spawnUnitOther(unit)
 })
 NET.netEventEmitter.on("serverUnitsUpdate", data => {
-    game?.handleServerUpdate(data[0], data[1])
+    game?.handleServerUpdate(data[0], data[1], data[2])
 })

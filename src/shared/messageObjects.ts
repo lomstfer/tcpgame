@@ -78,10 +78,12 @@ export class ClientMoveUnits {
 }
 
 export class ServerUnitsUpdate {
+    timeSent: number
     units: Unit[]
     timeToUpdate: number
-    constructor(units: Unit[], time: number) {
+    constructor(timeSent: number, units: Unit[], timeToUpdate: number) {
+        this.timeSent = timeSent
         this.units = units
-        this.timeToUpdate = time
+        this.timeToUpdate = timeToUpdate
     }
 }

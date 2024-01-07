@@ -15,12 +15,11 @@ export class SocketData {
 
     handleClientPong(sentTime: number, currentServerTime: number) {
         const ping = currentServerTime - sentTime
-        console.log("ping:", ping)
-        this.ping = ping
-        /* this.latestPings.push(ping)
+        // this.ping = ping
+        this.latestPings.push(ping)
         if (this.latestPings.length > 5) {
             this.latestPings.splice(0, 1)
-
+            
             const sortedPings =  [...this.latestPings].sort((a, b) => a - b)
             const average = UTILS.getAverageCloseToMedian(sortedPings, 1)
             if (isNaN(average)) {
@@ -32,6 +31,7 @@ export class SocketData {
         }
         else {
             this.ping = ping
-        }  */
+        } 
+        console.log("r: ", ping, "avg: ", this.ping)
     }
 }

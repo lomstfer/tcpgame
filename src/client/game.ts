@@ -181,9 +181,8 @@ export class GameInstance {
         this.otherUnits.set(unitR.data.id, unitR)
     }
 
-    handleServerUpdate(units: Unit[], timeUntilExecute: number) {
+    handleServerUpdate(timeSinceSent: number, units: Unit[], timeUntilExecute: number) {
         console.log("exe:", timeUntilExecute)
-        let doTimeout = true
         for (const updatedUnit of units) {
             if (updatedUnit.movingTo == undefined) {
                 console.log("updatedUnit.movingTo == undefined   (WHAT)")
@@ -194,14 +193,7 @@ export class GameInstance {
                 continue
             }
 
-            const diff = Vec2.squareLengthOf(Vec2.sub(unit.data.position, updatedUnit.position))
-            if (diff > 10 * 10) {
-                unit.data.position = updatedUnit.position
-                console.log("DIFF CORRECTION")
-            }
-
             if (timeUntilExecute < 0) {
-                doTimeout = false
                 const timeIntoMove = -timeUntilExecute
                 const totalDistance = Vec2.lengthOf(Vec2.sub(updatedUnit.position, updatedUnit.movingTo))
                 const distanceIntoMove = timeIntoMove * 0.001 * CONSTS.UNIT_SPEED
@@ -210,16 +202,38 @@ export class GameInstance {
                 unit.data.movingTo = updatedUnit.movingTo
             }
         }
-        if (doTimeout) {
-            const now = Date.now()
-            setTimeout(() => { this.enforceServerUpdate(units, now) }, timeUntilExecute)
+        if (timeUntilExecute >= 0) {
+            setTimeout(() => { this.enforceServerUpdate(units, timeSinceSent + timeUntilExecute) }, timeUntilExecute)
         }
     }
+    timeSinceLastUpdate: number | undefined
+    lastUpdateTime: number | undefined
+    private enforceServerUpdate(units: Unit[], timeSinceSent: number) {
+        console.log("SHOULDHAP", timeSinceSent)
 
-    private enforceServerUpdate(units: Unit[], start: number) {
+        if (this.lastUpdateTime) {
+            this.timeSinceLastUpdate = Date.now() - this.lastUpdateTime
+        }
+        this.lastUpdateTime = Date.now()
+
         for (const updatedUnit of units) {
             const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (unit != undefined) {
+                if (unit.data.movingTo != undefined && // prevents spam move command bug (jumps forward too much)
+                    ((this.timeSinceLastUpdate && this.timeSinceLastUpdate > timeSinceSent) || !this.timeSinceLastUpdate)
+                ) {
+                    // take into account that the updated data is old
+                    const direction = Vec2.normalize(Vec2.sub(unit.data.movingTo, updatedUnit.position))
+                    const distance = Vec2.multiply(direction, timeSinceSent * 0.001 * CONSTS.UNIT_SPEED)
+                    const prediction = Vec2.add(updatedUnit.position, distance)
+
+                    const diff = Vec2.squareLengthOf(Vec2.sub(unit.data.position, prediction))
+                    if (diff > 10 * 10) {
+                        unit.data.position = prediction
+                        console.log("DIFF CORRECTION")
+                    }
+                }
+
                 unit.data.movingTo = updatedUnit.movingTo
             }
         }

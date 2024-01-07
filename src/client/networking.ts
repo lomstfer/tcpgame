@@ -15,7 +15,7 @@ type netEvents = {
     matchWon: undefined,
     spawnServerUnitSelf: Unit
     spawnServerUnitOther: Unit,
-    serverUnitsUpdate: [Unit[], number]
+    serverUnitsUpdate: [number, Unit[], number]
 }
 
 export const netEventEmitter = mitt<netEvents>()
@@ -78,7 +78,12 @@ export function handleNetworking(ws: WebSocket) {
             }
             case MSG.MessageID.serverUnitsUpdate: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerUnitsUpdate>(bytes)
-                netEventEmitter.emit("serverUnitsUpdate", [msgObj.units, msgObj.timeToUpdate - getMatchTimeMS()])
+                const data: [number, Unit[], number] = [
+                    getMatchTimeMS() - msgObj.timeSent, 
+                    msgObj.units, 
+                    msgObj.timeToUpdate - getMatchTimeMS()
+                ]
+                netEventEmitter.emit("serverUnitsUpdate", data)
                 break
             }
         }
