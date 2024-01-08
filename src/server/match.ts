@@ -116,6 +116,7 @@ export class Match {
         }
         averagePosition = Vec2.divide(averagePosition, units.length)
 
+        const start1 = performance.now()
         for (const unit of units) {
             for (const [key, value] of this.roundedUnitsPositions) {
                 if (value == unit) {
@@ -126,24 +127,23 @@ export class Match {
             const updatedUnit = lodash.cloneDeep(unit)
             // let moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.sub(updatedUnit.position, averagePosition))
             let moveTo = new Vec2(here.x, here.y)
-            const start1 = performance.now()
             if (this.alreadyHasRoundedUnitPosition(moveTo)) {
-                moveTo = Vec2.sub(moveTo, Vec2.randomDirection(Math.random() * 2 * CONSTS.UNIT_SIZE))
+                moveTo = Vec2.sub(moveTo, Vec2.randomDirection(CONSTS.UNIT_SIZE))
             }
-            console.log(performance.now() - start1)
-
+            
             updatedUnit.movingTo = moveTo
             this.unitsUpdated.push(updatedUnit)
-
+            
             const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(updatedUnit.movingTo))
             this.roundedUnitsPositions.set(roundedPositionString, unit)
-
+            
             const delay = this.getInputDelay();
             (new NanoTimer()).setTimeout(() => {
                 unit.movingTo = moveTo
             }, "", delay.toString() + "m")
         }
-
+        console.log(performance.now() - start1)
+        
     }
 
     consumeAlreadyUpdatedUnits(): Unit[] {
