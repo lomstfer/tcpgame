@@ -2,6 +2,7 @@ import * as PIXI from "pixi.js"
 import { Unit } from "../shared/unit.js"
 import * as COLORS from "./colors.js"
 import { Vec2 } from "../shared/utils.js"
+import * as CONSTS from "../shared/constants.js"
 
 export class UnitRepresentation {
     data: Unit
@@ -13,8 +14,8 @@ export class UnitRepresentation {
     constructor(data: Unit, color: number) {
         this.data = data
         
-        const width = 20
-        const height = 20
+        const width = CONSTS.UNIT_SIZE
+        const height = CONSTS.UNIT_SIZE
     
         this.body = new PIXI.Graphics()
         this.body.width = width

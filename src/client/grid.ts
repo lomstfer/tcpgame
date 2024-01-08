@@ -20,6 +20,7 @@ export class Grid {
         this.sprite.filters = [this.gridFilter]
         this.gridFilter.uniforms.uSize = new PIXI.Point(this.sprite.width, this.sprite.height)
         this.gridFilter.uniforms.uWorldPosition = new PIXI.Point(this.sprite.x, this.sprite.y)
+        this.gridFilter.uniforms.uGridSquareSize = CONSTS.GRID_SQUARE_SIZE
     }
 
     update(cameraPosition: Vec2) {

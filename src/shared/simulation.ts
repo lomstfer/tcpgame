@@ -20,11 +20,6 @@ export function moveUnit(unit: Unit) {
     // console.log(unit.position.x, unit.position.y)
 }
 
-export function getMoveToInGroup(clickPosition: Vec2, thisUnit: Unit, units: Unit[]): Vec2 {
-    for (const unit of units) {
-        if (unit == thisUnit) {
-            console.log("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        }
-    }
-    return clickPosition
+export function spreadOutUnits(unitRoundedPositions: Map<string, Unit>) {
+    
 }

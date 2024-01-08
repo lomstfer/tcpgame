@@ -7,7 +7,7 @@ import * as SUTILS from "./serverUtils.js"
 import { Unit } from "../shared/unit.js"
 import * as CONSTS from "../shared/constants.js"
 import * as SIMULATION from "../shared/simulation.js"
-import lodash from "lodash"
+import lodash, { round } from "lodash"
 import * as SCONSTS from "./serverConstants.js"
 import { SocketData } from './socketData.js'
 import NanoTimer from 'nanotimer'
@@ -33,10 +33,9 @@ export class Match {
     client2Units = new Map<string, Unit>()
 
     private unitsUpdated = new Array<Unit>()
+    private roundedUnitsPositions = new Map<string, Unit>()
 
     timeStarted: number
-
-    nanoTimer = new NanoTimer()
 
     constructor(id: string, timeStarted: number, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
@@ -55,9 +54,16 @@ export class Match {
     simulate(deltaTime: number) {
         for (const u of this.client1Units.values()) {
             SIMULATION.moveUnit(u)
+            
+            /* const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(u.position))
+            this.roundedUnitsPositions.set(roundedPositionString, u) */
         }
+
         for (const u of this.client2Units.values()) {
             SIMULATION.moveUnit(u)
+
+            /* const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(u.position))
+            this.roundedUnitsPositions.set(roundedPositionString, u) */
         }
     }
 
@@ -88,6 +94,9 @@ export class Match {
             this.client2Socket.socket.send(selfBytes)
             this.client1Socket.socket.send(otherBytes)
         }
+
+        const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(position))
+        this.roundedUnitsPositions.set(roundedPositionString, unit)
     }
 
     sendBytesToAll(bytes: Uint8Array) {
@@ -108,16 +117,29 @@ export class Match {
         averagePosition = Vec2.divide(averagePosition, units.length)
 
         for (const unit of units) {
+            for (const [key, value] of this.roundedUnitsPositions) {
+                if (value == unit) {
+                    this.roundedUnitsPositions.delete(key)
+                }
+            }
+
             const updatedUnit = lodash.cloneDeep(unit)
-            const moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.multiply(Vec2.sub(updatedUnit.position, averagePosition), 0.5))
+            // let moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.sub(updatedUnit.position, averagePosition))
+            let moveTo = new Vec2(here.x, here.y)
+            const start1 = performance.now()
+            if (this.alreadyHasRoundedUnitPosition(moveTo)) {
+                moveTo = Vec2.sub(moveTo, Vec2.randomDirection(Math.random() * 2 * CONSTS.UNIT_SIZE))
+            }
+            console.log(performance.now() - start1)
+
             updatedUnit.movingTo = moveTo
             this.unitsUpdated.push(updatedUnit)
-    
-            const delay = this.getInputDelay()
-    
-            const start = Date.now();
+
+            const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(updatedUnit.movingTo))
+            this.roundedUnitsPositions.set(roundedPositionString, unit)
+
+            const delay = this.getInputDelay();
             (new NanoTimer()).setTimeout(() => {
-                console.log("now!", Date.now() - start)
                 unit.movingTo = moveTo
             }, "", delay.toString() + "m")
         }
@@ -152,5 +174,17 @@ export class Match {
             return SCONSTS.INPUT_DELAY_MINIMUM_MS
         }
         return delay/* SCONSTS.INPUT_DELAY_MINIMUM_MS */
+    }
+
+    getRoundedUnitPosition(position: Vec2): Vec2 {
+        const s = CONSTS.UNIT_SIZE
+        const rounded = new Vec2(Math.round(position.x / s) * s, Math.round(position.y / s) * s)
+        return rounded
+    }
+
+    alreadyHasRoundedUnitPosition(position: Vec2): boolean {
+        const rounded = this.getRoundedUnitPosition(position)
+        const has = this.roundedUnitsPositions.has(JSON.stringify(rounded))
+        return has
     }
 }

@@ -32,6 +32,6 @@ export class SocketData {
         else {
             this.ping = ping
         } 
-        console.log("r: ", ping, "avg: ", this.ping)
+        // console.log("r: ", ping, "avg: ", this.ping)
     }
 }

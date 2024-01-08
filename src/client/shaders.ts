@@ -8,6 +8,7 @@ export const gridFragShader = `
 
     uniform vec2 uSize;
     uniform vec2 uWorldPosition;
+    uniform float uGridSquareSize;
 
     void main(void) {
         vec2 worldPos = vTextureCoord * inputSize.xy / outputFrame.zw * uSize + uWorldPosition;
@@ -15,7 +16,7 @@ export const gridFragShader = `
         vec3 grid = vec3(1.0, 1.0, 1.0);
         vec4 color = vec4(0.0);
 
-        vec2 b = worldPos / 30.0;
+        vec2 b = worldPos / uGridSquareSize;
         
         float t = 0.0;
         float lineSize = 0.06;

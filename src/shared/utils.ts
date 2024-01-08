@@ -90,13 +90,22 @@ export class Vec2 {
         return vec.x * vec.x + vec.y * vec.y
     }
 
-    static Lerp(p0: Vec2, p1: Vec2, t: number): Vec2 {
+    static lerp(p0: Vec2, p1: Vec2, t: number): Vec2 {
         t = t < 0 ? 0 : t > 1 ? 1 : t
         return new Vec2(p0.x + (p1.x - p0.x) * t, p0.y + (p1.y - p0.y) * t)
     }
 
-    static LerpUnclamped(p0: Vec2, p1: Vec2, t: number): Vec2 {
+    static lerpUnclamped(p0: Vec2, p1: Vec2, t: number): Vec2 {
         return new Vec2(p0.x + (p1.x - p0.x) * t, p0.y + (p1.y - p0.y) * t)
+    }
+
+    static randomDirection(length?: number) : Vec2 {
+        const angle = Math.random() * (2 * Math.PI)
+        const dir = new Vec2(Math.cos(angle), Math.sin(angle))
+        if (length) {
+            return Vec2.multiply(dir, length)
+        }
+        return dir
     }
 
     /* static minLength(vec: Vec2, minimum: number): Vec2 {

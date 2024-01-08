@@ -198,7 +198,7 @@ export class GameInstance {
                 const totalDistance = Vec2.lengthOf(Vec2.sub(updatedUnit.position, updatedUnit.movingTo))
                 const distanceIntoMove = timeIntoMove * 0.001 * CONSTS.UNIT_SPEED
                 const ratio = distanceIntoMove / totalDistance
-                unit.data.position = Vec2.Lerp(updatedUnit.position, updatedUnit.movingTo, ratio)
+                unit.data.position = Vec2.lerp(updatedUnit.position, updatedUnit.movingTo, ratio)
                 unit.data.movingTo = updatedUnit.movingTo
             }
         }

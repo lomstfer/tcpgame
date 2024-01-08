@@ -255,7 +255,7 @@ function sendUnitUpdate(
     }
 
     const delay = match.getInputDelay()
-    console.log("delay:", delay)
+    // console.log("delay:", delay)
     const matchTime = match.getMatchTime(getElapsedTime())
     const obj = new MSGOBJS.ServerUnitsUpdate(matchTime, units, matchTime + delay)
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverUnitsUpdate, obj)
