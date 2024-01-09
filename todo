@@ -1,1 +1,1 @@
-* encrypt id:s before sending them to client so that they cant "impersonate". decrypt when they do stuff
+* encrypt id:s before sending them to client so that they cannot "impersonate". decrypt when they do stuff

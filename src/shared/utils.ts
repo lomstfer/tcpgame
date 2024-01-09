@@ -108,6 +108,14 @@ export class Vec2 {
         return dir
     }
 
+    static vec2FromAngle(radians: number, length?: number) : Vec2 {
+        const output = new Vec2(Math.cos(radians), Math.sin(radians))
+        if (length) {
+            return Vec2.multiply(output, length)
+        }
+        return output
+    }
+
     /* static minLength(vec: Vec2, minimum: number): Vec2 {
         let lenSqr = vec.x * vec.x + vec.y * vec.y
         if (lenSqr == 0) {
