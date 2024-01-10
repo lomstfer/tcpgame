@@ -115,34 +115,29 @@ export class Match {
 
     moveUnits(unitIds: string[], here: Vec2) {
         const units: Unit[] = []
-        // let averagePosition: Vec2 = new Vec2(0, 0)
+        let averagePosition: Vec2 = new Vec2(0, 0)
         for (const id of unitIds) {
             const unit = this.client1Units.get(id) || this.client2Units.get(id)
             if (unit != undefined) {
                 units.push(unit)
-                // averagePosition = Vec2.add(averagePosition, unit.position)
+                averagePosition = Vec2.add(averagePosition, unit.position)
+
+                for (const [key, value] of this.roundedUnitsPositions) {
+                    if (value == unit) {
+                        this.roundedUnitsPositions.delete(key)
+                    }
+                }
             }
         }
-        // averagePosition = Vec2.divide(averagePosition, units.length)
-
-        const firstRingSpacing = 2*Math.PI / (units.length - 1)
+        averagePosition = Vec2.divide(averagePosition, units.length)
 
         const start1 = performance.now()
         for (const [i, unit] of units.entries()) {
-            // remove current unit position (can move to where last self was)
-            for (const [key, value] of this.roundedUnitsPositions) {
-                if (value == unit) {
-                    console.log(i)
-                    this.roundedUnitsPositions.delete(key)
-                }
-            }
-
             const updatedUnit = lodash.cloneDeep(unit)
 
-            // let moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.sub(updatedUnit.position, averagePosition))
-            let moveTo = new Vec2(here.x, here.y)
+            let moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.sub(updatedUnit.position, averagePosition))
             if (this.alreadyHasRoundedUnitPosition(moveTo)) {
-                moveTo = Vec2.sub(moveTo, Vec2.vec2FromAngle(firstRingSpacing * i, CONSTS.UNIT_SIZE))
+                moveTo = Vec2.add(moveTo, Vec2.randomDirection(CONSTS.UNIT_SIZE))
             }
             
             updatedUnit.movingTo = moveTo
@@ -157,7 +152,6 @@ export class Match {
             }, "", delay.toString() + "m")
         }
         console.log(performance.now() - start1)
-        
     }
 
     getUnitsFromIds(ids: string[]) {
