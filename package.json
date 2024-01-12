@@ -28,6 +28,7 @@
     "nanotimer": "^0.3.15",
     "nodemon": "^3.0.2",
     "pixi.js": "^7.3.2",
+    "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.39.0",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4",
     "ws": "^8.14.2"

@@ -28,10 +28,10 @@ export function handleNetworking(ws: WebSocket) {
         const arrbuf: ArrayBuffer = await e.data.arrayBuffer()
         const bytes = new Uint8Array(arrbuf)
 
-        const messageID = MSG.getMessageIDFromBytes(bytes)
+        const messageID = MSG.getMessageIdFromBytes(bytes)
 
         switch (messageID) {
-            case MSG.MessageID.serverConnectionAck: {
+            case MSG.MessageId.serverConnectionAck: {
                 const timeSyncInterval = setInterval(() => {
                     if (serverTimeSyncer.timeSynced) {
                         clearInterval(timeSyncInterval)
@@ -42,19 +42,19 @@ export function handleNetworking(ws: WebSocket) {
                 }, 200)
                 break
             }
-            case MSG.MessageID.serverPing: {
+            case MSG.MessageId.serverPing: {
                 const sentTime = MSG.getObjectFromBytes<MSGOBJS.ServerPing>(bytes).sentFromServerTime
                 const obj = new MSGOBJS.ClientPong(sentTime)
-                ws.send(MSG.getBytesFromMessageAndObj(MSG.MessageID.clientPong, obj))
+                ws.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.clientPong, obj))
                 console.log("time d:", serverTimeSyncer.getServerTime() - sentTime)
                 break
             }
-            case MSG.MessageID.serverTimeAnswer: {
+            case MSG.MessageId.serverTimeAnswer: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerTimeAnswer>(bytes)
                 serverTimeSyncer.handleServerTimeUpdate(msgObj.clientTime, msgObj.serverTime)
                 break
             }
-            case MSG.MessageID.serverFoundMatch: {
+            case MSG.MessageId.serverFoundMatch: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerFoundMatch>(bytes)
                 currentMatchData = msgObj.data
                 console.log("found match")
@@ -62,21 +62,21 @@ export function handleNetworking(ws: WebSocket) {
                 netEventEmitter.emit("foundMatch", msgObj.data)
                 break
             }
-            case MSG.MessageID.serverOpponentDisconnected: {                
+            case MSG.MessageId.serverOpponentDisconnected: {                
                 netEventEmitter.emit("matchWon")
                 break
             }
-            case MSG.MessageID.serverSpawnUnitSelf: {
+            case MSG.MessageId.serverSpawnUnitSelf: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnitSelf>(bytes)                
                 netEventEmitter.emit("spawnServerUnitSelf", msgObj.unit)
                 break
             }
-            case MSG.MessageID.serverSpawnUnitOther: {
+            case MSG.MessageId.serverSpawnUnitOther: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnitOther>(bytes)                
                 netEventEmitter.emit("spawnServerUnitOther", msgObj.unit)
                 break
             }
-            case MSG.MessageID.serverUnitsUpdate: {
+            case MSG.MessageId.serverUnitsUpdate: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerUnitsUpdate>(bytes)
                 const data: [number, Unit[], number] = [
                     getMatchTimeMS() - msgObj.timeSent, 
@@ -92,7 +92,7 @@ export function handleNetworking(ws: WebSocket) {
 
 export function findMatch(ws: WebSocket, name: string) {
     const msgObj = new MSGOBJS.ClientEnterMatchFinder(new ClientInfo(name))
-    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientEnterMatchFinder, msgObj)
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.clientEnterMatchFinder, msgObj)
     ws.send(bytes)
     netEventEmitter.emit("allowFindMatch", false)
 }
@@ -110,19 +110,19 @@ export function getMatchTimeMS(): number {
 
 function sendServerTimeRequest(ws: WebSocket) {
     const obj = new MSGOBJS.ClientTimeRequest(Date.now())
-    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientTimeRequest, obj)
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.clientTimeRequest, obj)
     ws.send(bytes)
 }
 
 export function sendSpawnUnit(ws: WebSocket, position: Vec2) {
     const obj = new MSGOBJS.ClientSpawnUnitRequest(position)
-    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientSpawnUnit, obj)
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.clientMatchSpawnUnit, obj)
     ws.send(bytes)
 }
 
 export function sendMoveUnits(ws: WebSocket, data: [Set<Unit>, Vec2]) {
     const ids = Array.from(data[0]).map(u => u.id)
     const obj = new MSGOBJS.ClientMoveUnits(ids, data[1])
-    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.clientMoveUnits, obj)
+    const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.clientMatchMoveUnits, obj)
     ws.send(bytes)
 }

@@ -35,20 +35,54 @@ export class Match {
     private unitsUpdated = new Array<Unit>()
     private roundedUnitsPositions = new Map<string, Unit>()
 
-    timeStarted: number
+    // serverTimeStarted: number
+    dateTimeStarted: number
 
-    constructor(id: string, timeStarted: number, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
+    constructor(id: string, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
-        this.timeStarted = timeStarted
+        this.dateTimeStarted = Date.now()
 
         this.client1Socket = client1Socket
         this.client2Socket = client2Socket
         this.client1Info = client1Info
         this.client2Info = client2Info
+
+        this.client1Socket.socket.on('message', (data) => {
+            const bytes = new Uint8Array(data as ArrayBuffer)
+            const messageId = MSG.getMessageIdFromBytes(bytes)
+            this.handleMessage(bytes, messageId, this.client1Socket.id)
+        })
+        this.client2Socket.socket.on('message', (data) => {
+            const bytes = new Uint8Array(data as ArrayBuffer)
+            const messageId = MSG.getMessageIdFromBytes(bytes)
+            this.handleMessage(bytes, messageId, this.client2Socket.id)
+        })
     }
 
-    getMatchTime(currentTime: number): number {
-        return currentTime - this.timeStarted
+    handleMessage(bytes: Uint8Array, messageId: MSG.MessageId, clientId: string) {
+        switch (messageId) {
+            case MSG.MessageId.clientMatchSpawnUnit: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientSpawnUnitRequest>(bytes)
+                if (msgObj == undefined) {
+                    break
+                }
+                this.spawnUnit(clientId, msgObj.position)
+                break
+            }
+            case MSG.MessageId.clientMatchMoveUnits: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientMoveUnits>(bytes)
+                if (msgObj == undefined) {
+                    break
+                }
+                this.moveUnits(msgObj.unitIds, msgObj.position)
+                this.sendUnitsUpdate()
+                break
+            }
+        }
+    }
+
+    getMatchTime(): number {
+        return Date.now() - this.dateTimeStarted
     }
 
     simulate(deltaTime: number) {
@@ -59,6 +93,8 @@ export class Match {
             this.roundedUnitsPositions.set(roundedPositionString, u) */
         }
 
+        console.log(this.getMatchTime())
+
         for (const u of this.client2Units.values()) {
             SIMULATION.moveUnit(u)
 
@@ -67,14 +103,29 @@ export class Match {
         }
     }
 
+    sendUnitsUpdate() {
+        const units = this.consumeAlreadyUpdatedUnits()
+        if (units.length == 0) {
+            return
+        }
+
+        const delay = this.getInputDelay()
+        // console.log("delay:", delay)
+        const matchTime = this.getMatchTime()
+        const obj = new MSGOBJS.ServerUnitsUpdate(matchTime, units, matchTime + delay)
+        const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverUnitsUpdate, obj)
+        this.client1Socket.socket.send(bytes)
+        this.client2Socket.socket.send(bytes)
+    }
+
     disconnectClient(id: string) {
         if (id == this.client1Socket.id) {
             console.log(this.client1Info.name, "disconnected")
-            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageID.serverOpponentDisconnected))
+            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
         }
         else if (id == this.client2Socket.id) {
             console.log(this.client2Info.name, "disconnected")
-            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageID.serverOpponentDisconnected))
+            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
         }
     }
 
@@ -90,8 +141,8 @@ export class Match {
             }
         }
 
-        const selfBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverSpawnUnitSelf, new MSGOBJS.ServerSpawnUnitSelf(unit))
-        const otherBytes = MSG.getBytesFromMessageAndObj(MSG.MessageID.serverSpawnUnitOther, new MSGOBJS.ServerSpawnUnitOther(unit))
+        const selfBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitSelf, new MSGOBJS.ServerSpawnUnitSelf(unit))
+        const otherBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitOther, new MSGOBJS.ServerSpawnUnitOther(unit))
 
         if (ownerId == this.client1Socket.id) {
             this.client1Units.set(unit.id, unit)
@@ -131,7 +182,6 @@ export class Match {
         }
         averagePosition = Vec2.divide(averagePosition, units.length)
 
-        const start1 = performance.now()
         for (const [i, unit] of units.entries()) {
             const updatedUnit = lodash.cloneDeep(unit)
 
@@ -151,7 +201,6 @@ export class Match {
                 unit.movingTo = moveTo
             }, "", delay.toString() + "m")
         }
-        console.log(performance.now() - start1)
     }
 
     getUnitsFromIds(ids: string[]) {
