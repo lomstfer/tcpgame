@@ -51,3 +51,37 @@ export const gridFragShader = `
         gl_FragColor = color;
     }
 `
+
+export const outlineShader = `
+    precision highp float;
+
+    uniform sampler2D uSampler;
+    varying vec2 vTextureCoord;
+
+    uniform vec4 inputSize;
+    uniform vec4 outputFrame;
+
+    void main(void) {
+        vec2 pos = vTextureCoord * inputSize.xy / outputFrame.zw * vec2(8.0, 8.0);
+
+        vec4 color = texture2D(uSampler, vTextureCoord);
+        if (color.a != 0.0) {
+            vec2 pos01 = pos / 8.0;
+            if (floor(pos.x) == 0.0 || floor(pos.x) == 7.0 || 
+                floor(pos.y) == 0.0 || floor(pos.y) == 7.0
+            ) {
+                color.r = 1.0;
+            }
+            else if (
+                texture2D(uSampler, vec2(pos01.x - 1.0/inputSize.x, pos01.y)).a == 0.0 ||
+                texture2D(uSampler, vec2(pos01.x + 1.0/inputSize.x, pos01.y)).a == 0.0 ||
+                texture2D(uSampler, vec2(pos01.x, pos01.y - 1.0/inputSize.y)).a == 0.0 ||
+                texture2D(uSampler, vec2(pos01.x, pos01.y + 1.0/inputSize.y)).a == 0.0
+            ) {
+                color.g = 1.0;
+            }
+        }
+        
+        gl_FragColor = color;
+    }
+`

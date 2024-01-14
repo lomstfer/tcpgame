@@ -3,38 +3,50 @@ import { Unit } from "../shared/unit.js"
 import * as COLORS from "./colors.js"
 import { Vec2 } from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
+import * as TEXTURES from "./textures.js"
+import { outlineShader } from "./shaders.js"
 
 export class UnitRepresentation {
     data: Unit
-    body: PIXI.Graphics
-    border: PIXI.Graphics
+    root = new PIXI.Container()
+    body: PIXI.Sprite
+    border: PIXI.Sprite
 
     velocity = new Vec2(0, 0)
+
+    color: number
+
+    // outlineFilter = new PIXI.Filter(undefined, outlineShader)
     
     constructor(data: Unit, color: number) {
         this.data = data
+        this.color = color
         
+        this.root.x = data.position.x
+        this.root.y = data.position.y
+
         const width = CONSTS.UNIT_SIZE
         const height = CONSTS.UNIT_SIZE
     
-        this.body = new PIXI.Graphics()
+        this.body = PIXI.Sprite.from(TEXTURES.textures.unit)
+        this.body.pivot.set(this.body.width/2, this.body.height/2)
         this.body.width = width
         this.body.height = height
-        this.body.position.x = data.position.x
-        this.body.position.y = data.position.y
-        this.body.beginFill(0xffffff)
-        this.body.drawRect(0, 0, width, height)
-        this.body.endFill()
-        this.body.pivot.set(width/2, height/2)
         this.body.tint = color
 
-        this.border = new PIXI.Graphics()
-        this.border.lineStyle(3, 0xffffff)
-        this.border.drawRect(0, 0, width, height)
+        // this.body.filters = [this.outlineFilter]
+
+        this.border = PIXI.Sprite.from(TEXTURES.textures.unit)
+        this.border.pivot.set(this.border.width/2, this.border.height/2)
+        this.border.width = width
+        this.border.height = height
         this.border.visible = false
+        this.border.scale.x *= 1.2
+        this.border.scale.y *= 1.2
         this.border.tint = COLORS.SELECTED_UNIT_BORDER_COLOR
-    
-        this.body.addChild(this.border)
+        
+        // this.root.addChild(this.border)
+        this.root.addChild(this.body)
     }
 
     update(deltatime: number) {
@@ -42,5 +54,13 @@ export class UnitRepresentation {
         result = Vec2.add(result, Vec2.multiply(this.velocity, deltatime))
         this.body.x = result.x
         this.body.y = result.y
+    }
+
+    setSelected(selected: boolean) {
+        if (selected) {
+            this.body.tint = COLORS.SELECTED_UNIT_BORDER_COLOR
+            return
+        }
+        this.body.tint = this.color
     }
 }

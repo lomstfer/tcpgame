@@ -35,7 +35,6 @@ export class Match {
     private unitsUpdated = new Array<Unit>()
     private roundedUnitsPositions = new Map<string, Unit>()
 
-    // serverTimeStarted: number
     dateTimeStarted: number
 
     constructor(id: string, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
@@ -88,18 +87,12 @@ export class Match {
     simulate(deltaTime: number) {
         for (const u of this.client1Units.values()) {
             SIMULATION.moveUnit(u)
-            
-            /* const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(u.position))
-            this.roundedUnitsPositions.set(roundedPositionString, u) */
         }
 
         console.log(this.getMatchTime())
 
         for (const u of this.client2Units.values()) {
             SIMULATION.moveUnit(u)
-
-            /* const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(u.position))
-            this.roundedUnitsPositions.set(roundedPositionString, u) */
         }
     }
 

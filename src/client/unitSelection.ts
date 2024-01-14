@@ -52,13 +52,13 @@ export class UnitSelection {
         for (const u of selectableUnits.values()) {
             if (GUTILS.overlaps(
                     this.sprite.x, this.sprite.y, this.sprite.width, this.sprite.height,
-                    u.body.x - u.body.width/2, u.body.y - u.body.height/2, u.body.width, u.body.height
+                    u.root.x - u.root.width/2, u.root.y - u.root.height/2, u.root.width, u.root.height
             )) {
-                u.body.getChildAt(0).visible = true
+                u.setSelected(true)
                 this.selectedUnits.add(u.data)
             }
             else {
-                u.body.getChildAt(0).visible = false
+                u.setSelected(false)
                 this.selectedUnits.delete(u.data)
             }
         }

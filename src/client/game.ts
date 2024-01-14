@@ -114,7 +114,7 @@ export class GameInstance {
 
             if (keys.keyPressed("KeyR")) {
                 gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
-                this.spawnUnitSelfUnconfirmed(this.mouseWorldPosition)
+                //this.spawnUnitSelfUnconfirmed(this.mouseWorldPosition)
             }
 
             if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
@@ -138,8 +138,8 @@ export class GameInstance {
             if (unit == undefined) {
                 continue
             }
-            unit.body.position.x = UTILS.Lerp(pos.x, unit.data.position.x, alpha)
-            unit.body.position.y = UTILS.Lerp(pos.y, unit.data.position.y, alpha)
+            unit.root.position.x = UTILS.Lerp(pos.x, unit.data.position.x, alpha)
+            unit.root.position.y = UTILS.Lerp(pos.y, unit.data.position.y, alpha)
         }
     }
 
@@ -156,28 +156,21 @@ export class GameInstance {
 
     private spawnUnitSelfUnconfirmed(position: Vec2) {
         const unitR = new UnitRepresentation(new Unit("none", position), COLORS.SELF_COLOR)
-
-        this.worldRoot.addChild(unitR.body)
-
+        this.worldRoot.addChild(unitR.root)
         this.selfUnitsUnconfirmed.push(unitR)
     }
 
     spawnUnitSelf(unit: Unit) {
-        this.worldRoot.removeChild(this.selfUnitsUnconfirmed[0].body)
-        this.selfUnitsUnconfirmed.splice(0, 1)
-
+        /* this.worldRoot.removeChild(this.selfUnitsUnconfirmed[0].root)
+        this.selfUnitsUnconfirmed.splice(0, 1) */
         const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
-
-        this.worldRoot.addChild(unitR.body)
-
+        this.worldRoot.addChild(unitR.root)
         this.selfUnits.set(unitR.data.id, unitR)
     }
 
     spawnUnitOther(unit: Unit) {
         const unitR = new UnitRepresentation(unit, COLORS.OTHER_COLOR)
-
-        this.worldRoot.addChild(unitR.body)
-
+        this.worldRoot.addChild(unitR.root)
         this.otherUnits.set(unitR.data.id, unitR)
     }
 

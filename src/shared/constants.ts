@@ -8,4 +8,4 @@ export const GAME_HEIGHT = 720
 export const UNIT_SPEED = 200
 
 export const GRID_SQUARE_SIZE = 30
-export const UNIT_SIZE = 20
+export const UNIT_SIZE = 32
