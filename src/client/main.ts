@@ -9,6 +9,7 @@ import { KeyInput } from "./keyInput.js"
 const websocket = new WebSocket("ws://192.168.0.121:80")
 NET.handleNetworking(websocket)
 
+// PIXI.settings.ROUND_PIXELS = false
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
     background: '#335935',
     width: CONSTS.GAME_WIDTH,

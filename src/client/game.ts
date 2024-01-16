@@ -140,6 +140,7 @@ export class GameInstance {
             }
             unit.root.position.x = UTILS.Lerp(pos.x, unit.data.position.x, alpha)
             unit.root.position.y = UTILS.Lerp(pos.y, unit.data.position.y, alpha)
+            unit.root.scale.x = unit.data.position.x - pos.x > 0 ? Math.abs(unit.root.scale.x) : unit.data.position.x - pos.x < 0 ? -Math.abs(unit.root.scale.x) : unit.root.scale.x
         }
     }
 
