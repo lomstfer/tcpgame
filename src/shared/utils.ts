@@ -116,6 +116,10 @@ export class Vec2 {
         return output
     }
 
+    static round(v: Vec2): Vec2 {
+        return new Vec2(Math.round(v.x), Math.round(v.y))
+    }
+
     /* static minLength(vec: Vec2, minimum: number): Vec2 {
         let lenSqr = vec.x * vec.x + vec.y * vec.y
         if (lenSqr == 0) {
@@ -126,4 +130,3 @@ export class Vec2 {
         }
     } */
 }
-

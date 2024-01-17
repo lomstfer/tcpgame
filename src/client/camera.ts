@@ -8,6 +8,7 @@ import { KeyInput } from "./keyInput.js"
 export class Camera {
     private targetPosition = new Vec2(0, 0)
     worldPosition = new Vec2(0, 0)
+    interpPosition = new Vec2(0, 0)
     private stiffness = 6
     private speed = 200
 
@@ -60,5 +61,6 @@ export class Camera {
 
         this.worldPosition.x = UTILS.Lerp(this.worldPosition.x, this.targetPosition.x, 1 - Math.exp(-this.stiffness * deltaTime))
         this.worldPosition.y = UTILS.Lerp(this.worldPosition.y, this.targetPosition.y, 1 - Math.exp(-this.stiffness * deltaTime))
+        // this.worldPosition = Vec2.round(this.interpPosition)
     }
 }

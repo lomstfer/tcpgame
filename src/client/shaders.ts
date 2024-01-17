@@ -1,3 +1,5 @@
+import { Filter } from "pixi.js"
+
 export const gridFragShader = `
     precision highp float;
 
@@ -85,3 +87,31 @@ export const outlineShader = `
         gl_FragColor = color;
     }
 `
+
+/* export const smoothShader = `
+precision highp float;
+
+uniform sampler2D uSampler;
+varying vec2 vTextureCoord;
+
+void main()
+{
+    // Sample the pixel color
+    vec3 pixelColor = texture2D(uSampler, vTextureCoord);
+
+    // Sobel filter for edge detection
+    float edge = length(texture2D(uSampler, vTextureCoord + vec2(-1, -1)).rgb * vec3(-1, -1, -1) +
+                        texture2D(uSampler, vTextureCoord + vec2( 0, -1)).rgb * vec3(-2, -2, -2) +
+                        texture2D(uSampler, vTextureCoord + vec2( 1, -1)).rgb * vec3(-1, -1, -1) +
+                        texture2D(uSampler, vTextureCoord + vec2(-1,  1)).rgb * vec3( 1,  1,  1) +
+                        texture2D(uSampler, vTextureCoord + vec2( 0,  1)).rgb * vec3( 2,  2,  2) +
+                        texture2D(uSampler, vTextureCoord + vec2( 1,  1)).rgb * vec3( 1,  1,  1));
+
+    // Apply smoothing
+    float smoothness = 1.0 - smoothstep(0.02, 0.05, edge);
+
+    // Output the final color
+    gl_FragColor = vec4(pixelColor, 1.0) * smoothness;
+}
+`
+export const smoothFilter = new Filter(undefined, smoothShader) */

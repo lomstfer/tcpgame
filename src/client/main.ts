@@ -11,7 +11,7 @@ NET.handleNetworking(websocket)
 
 // PIXI.settings.ROUND_PIXELS = false
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
-    background: '#335935',
+    background: '#55575c',
     width: CONSTS.GAME_WIDTH,
     height: CONSTS.GAME_HEIGHT,
     resizeTo: window,

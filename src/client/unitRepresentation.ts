@@ -4,7 +4,7 @@ import * as COLORS from "./colors.js"
 import { Vec2 } from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
 import * as TEXTURES from "./textures.js"
-import { outlineShader } from "./shaders.js"
+// import { smoothFilter } from "./shaders.js"
 
 export class UnitRepresentation {
     data: Unit
@@ -20,14 +20,12 @@ export class UnitRepresentation {
         
         this.root.x = data.position.x
         this.root.y = data.position.y
-
-        const width = CONSTS.UNIT_SIZE
-        const height = CONSTS.UNIT_SIZE
     
         this.body = PIXI.Sprite.from(TEXTURES.textures.unit1)
         this.body.pivot.set(this.body.width/2, this.body.height/2)
         this.body.scale.set(TEXTURES.baseScale)
         this.body.tint = color
+        // this.body.filters = [smoothFilter]
 
         this.border = PIXI.Sprite.from(TEXTURES.textures.unit1Border)
         this.border.pivot.set(this.border.width/2, this.border.height/2)
