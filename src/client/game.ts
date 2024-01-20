@@ -60,6 +60,12 @@ export class GameInstance {
             this.appStage.addChild(this.worldRoot)
         }
 
+        const t = new PIXI.Graphics()
+        t.beginFill(0xffffff)
+        t.drawCircle(0, 0, 10)
+        t.endFill()
+        this.worldRoot.addChild(t)
+
         this.worldRoot.addChild(this.grid.sprite)
         this.worldRoot.addChild(this.unitSelection.sprite)
 
@@ -99,7 +105,6 @@ export class GameInstance {
             this.appStage.removeChild(this.worldRoot)
         }
     }
-
 
     update(deltaTime: number, time: number, keys: KeyInput) {
         this.camera.update(deltaTime, keys)

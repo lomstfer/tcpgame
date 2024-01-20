@@ -4,6 +4,7 @@ import { Vec2 } from '../shared/utils.js'
 import * as MSG from "../shared/messageStuff.js"
 import * as MSGOBJS from "../shared/messageObjects.js"
 import * as SUTILS from "./serverUtils.js"
+import * as UTILS from "../shared/utils.js"
 import { Unit } from "../shared/unit.js"
 import * as CONSTS from "../shared/constants.js"
 import * as SIMULATION from "../shared/simulation.js"
@@ -32,8 +33,9 @@ export class Match {
     client1Units = new Map<string, Unit>()
     client2Units = new Map<string, Unit>()
 
+    private unitsGridPositionsToData = new Map<string, Unit>()
+
     private unitsUpdated = new Array<Unit>()
-    private roundedUnitsPositions = new Map<string, Unit>()
 
     dateTimeStarted: number
 
@@ -123,16 +125,19 @@ export class Match {
     }
 
     spawnUnit(ownerId: string, position: Vec2) {
-        const unit = new Unit(SUTILS.generateRandomID(), position)
-
-        const rounded = JSON.stringify(this.getRoundedUnitPosition(position))
-        const occupyingUnit = this.roundedUnitsPositions.get(rounded)
+        const gridPos = UTILS.roundWorldPositionToGrid(position)
+        const gridPosString = JSON.stringify(gridPos)
+        const occupyingUnit = this.unitsGridPositionsToData.get(gridPosString)
         if (occupyingUnit != undefined) {
-            const diff = Vec2.sub(position, occupyingUnit.position)
+            return
+            /* const diff = Vec2.sub(position, occupyingUnit.position)
             if (Vec2.squareLengthOf(diff) == 0) {
                 unit.position = Vec2.sub(occupyingUnit.position, Vec2.randomDirection(CONSTS.UNIT_SIZE))
-            }
+            } */
         }
+
+        const unit = new Unit(SUTILS.generateRandomID(), gridPos)
+        this.unitsGridPositionsToData.set(gridPosString, unit)
 
         const selfBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitSelf, new MSGOBJS.ServerSpawnUnitSelf(unit))
         const otherBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitOther, new MSGOBJS.ServerSpawnUnitOther(unit))
@@ -147,9 +152,6 @@ export class Match {
             this.client2Socket.socket.send(selfBytes)
             this.client1Socket.socket.send(otherBytes)
         }
-
-        const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(position))
-        this.roundedUnitsPositions.set(roundedPositionString, unit)
     }
 
     sendBytesToAll(bytes: Uint8Array) {
@@ -166,9 +168,9 @@ export class Match {
                 units.push(unit)
                 averagePosition = Vec2.add(averagePosition, unit.position)
 
-                for (const [key, value] of this.roundedUnitsPositions) {
+                for (const [key, value] of this.unitsGridPositionsToData) {
                     if (value == unit) {
-                        this.roundedUnitsPositions.delete(key)
+                        this.unitsGridPositionsToData.delete(key)
                     }
                 }
             }
@@ -179,15 +181,16 @@ export class Match {
             const updatedUnit = lodash.cloneDeep(unit)
 
             let moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.sub(updatedUnit.position, averagePosition))
-            if (this.alreadyHasRoundedUnitPosition(moveTo)) {
-                moveTo = Vec2.add(moveTo, Vec2.randomDirection(CONSTS.UNIT_SIZE))
+            moveTo = UTILS.roundWorldPositionToGrid(moveTo)
+            if (this.gridPositionOccupied(moveTo)) {
+                continue
             }
             
             updatedUnit.movingTo = moveTo
             this.unitsUpdated.push(updatedUnit)
             
-            const roundedPositionString = JSON.stringify(this.getRoundedUnitPosition(updatedUnit.movingTo))
-            this.roundedUnitsPositions.set(roundedPositionString, unit)
+            const roundedPositionString = JSON.stringify(UTILS.roundWorldPositionToGrid(updatedUnit.movingTo))
+            this.unitsGridPositionsToData.set(roundedPositionString, unit)
             
             const delay = this.getInputDelay();
             (new NanoTimer()).setTimeout(() => {
@@ -230,15 +233,14 @@ export class Match {
         return delay/* SCONSTS.INPUT_DELAY_MINIMUM_MS */
     }
 
-    getRoundedUnitPosition(position: Vec2): Vec2 {
+    /* getRoundedUnitPosition(position: Vec2): Vec2 {
         const s = CONSTS.UNIT_SIZE
         const rounded = new Vec2(Math.round(position.x / s) * s, Math.round(position.y / s) * s)
         return rounded
-    }
+    } */
 
-    alreadyHasRoundedUnitPosition(position: Vec2): boolean {
-        const rounded = this.getRoundedUnitPosition(position)
-        const has = this.roundedUnitsPositions.has(JSON.stringify(rounded))
+    gridPositionOccupied(position: Vec2): boolean {
+        const has = this.unitsGridPositionsToData.has(JSON.stringify(position))
         return has
     }
 }

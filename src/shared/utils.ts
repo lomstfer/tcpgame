@@ -1,4 +1,5 @@
 import * as PIXI from "pixi.js"
+import {GRID_SQUARE_SIZE} from "../shared/constants.js"
 
 export function getAverage(array: number[]): number {
     let sum = 0
@@ -129,4 +130,8 @@ export class Vec2 {
 
         }
     } */
+}
+
+export function roundWorldPositionToGrid(position: Vec2): Vec2 {
+    return Vec2.multiply(Vec2.round(Vec2.divide(position, GRID_SQUARE_SIZE)), GRID_SQUARE_SIZE)
 }

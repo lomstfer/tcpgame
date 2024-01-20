@@ -9,6 +9,17 @@
 
 body {
     overflow: hidden;
+    display: flex;
+}
+
+#background {
+    position: absolute;
+    /* background: url("../img/bg.jpg"); */
+    background-color: cadetblue;
+    background-size: cover;
+    background-position: center center;
+    width: 100vw;
+    height: 100vh;
 }
 
 canvas {
@@ -24,15 +35,6 @@ canvas {
     left: calc(var(--scale) * 5);
     bottom: calc(var(--scale) * 5);
     font-size: calc(var(--scale) * 8);
-}
-
-#background {
-    position: absolute;
-    background: url("../img/bg.jpg");
-    background-size: cover;
-    background-position: center center;
-    width: 100vw;
-    height: 100vh;
 }
 
 #find-match-inputs {

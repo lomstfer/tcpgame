@@ -28,7 +28,7 @@ export class Grid {
         this.sprite.y = cameraPosition.y - this.sprite.height / 2
 
         if (this.sprite.x != this.lastPosition.x || this.sprite.y != this.lastPosition.y) {
-            this.gridFilter.uniforms.uWorldPosition = new PIXI.Point(this.sprite.x, this.sprite.y)
+            this.gridFilter.uniforms.uWorldPosition = new PIXI.Point(this.sprite.x + CONSTS.GRID_SQUARE_SIZE/2, this.sprite.y + CONSTS.GRID_SQUARE_SIZE/2)
         }
         this.lastPosition = new Vec2(this.sprite.x, this.sprite.y)
     }
