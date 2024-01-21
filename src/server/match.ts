@@ -91,7 +91,7 @@ export class Match {
             SIMULATION.moveUnit(u)
         }
 
-        console.log(this.getMatchTime())
+        // console.log(this.getMatchTime())
 
         for (const u of this.client2Units.values()) {
             SIMULATION.moveUnit(u)
@@ -161,12 +161,12 @@ export class Match {
 
     moveUnits(unitIds: string[], here: Vec2) {
         const units: Unit[] = []
-        let averagePosition: Vec2 = new Vec2(0, 0)
+        // let averagePosition: Vec2 = new Vec2(0, 0)
         for (const id of unitIds) {
             const unit = this.client1Units.get(id) || this.client2Units.get(id)
             if (unit != undefined) {
                 units.push(unit)
-                averagePosition = Vec2.add(averagePosition, unit.position)
+                // averagePosition = Vec2.add(averagePosition, unit.position)
 
                 for (const [key, value] of this.unitsGridPositionsToData) {
                     if (value == unit) {
@@ -175,28 +175,54 @@ export class Match {
                 }
             }
         }
-        averagePosition = Vec2.divide(averagePosition, units.length)
-
+        // averagePosition = Vec2.divide(averagePosition, units.length)
+        const start = performance.now()
         for (const [i, unit] of units.entries()) {
             const updatedUnit = lodash.cloneDeep(unit)
 
-            let moveTo = Vec2.add(new Vec2(here.x, here.y), Vec2.sub(updatedUnit.position, averagePosition))
-            moveTo = UTILS.roundWorldPositionToGrid(moveTo)
-            if (this.gridPositionOccupied(moveTo)) {
-                continue
+            let moveTo = UTILS.roundWorldPositionToGrid(here)
+            const step = CONSTS.GRID_SQUARE_SIZE
+
+            const queue = [moveTo]
+            const visitedOrWillBe = new Set<string>()
+            while (queue.length > 0) {
+                const current = queue.shift()
+                if (current) {
+                    moveTo = current
+                }
+
+                if (!this.gridPositionOccupied(moveTo)) {
+                    break
+                }
+
+                const neighbors = [
+                    new Vec2(moveTo.x + step, moveTo.y),
+                    new Vec2(moveTo.x - step, moveTo.y),
+                    new Vec2(moveTo.x, moveTo.y + step),
+                    new Vec2(moveTo.x, moveTo.y - step)
+                ]
+                
+                for (const n of neighbors) {
+                    const ns = JSON.stringify(n)
+                    if (!visitedOrWillBe.has(ns)) {
+                        queue.push(n)
+                        visitedOrWillBe.add(ns)
+                    }
+                }
             }
-            
+
             updatedUnit.movingTo = moveTo
             this.unitsUpdated.push(updatedUnit)
-            
+
             const roundedPositionString = JSON.stringify(UTILS.roundWorldPositionToGrid(updatedUnit.movingTo))
             this.unitsGridPositionsToData.set(roundedPositionString, unit)
-            
+
             const delay = this.getInputDelay();
             (new NanoTimer()).setTimeout(() => {
                 unit.movingTo = moveTo
             }, "", delay.toString() + "m")
         }
+        console.log(performance.now() - start)
     }
 
     getUnitsFromIds(ids: string[]) {
