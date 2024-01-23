@@ -4,6 +4,7 @@ import { UnitRepresentation } from "./unitRepresentation.js"
 import * as GUTILS from "./gameUtils.js"
 import * as COLORS from "./colors.js"
 import { Unit } from "../shared/unit.js"
+import * as CONSTS from "../shared/constants.js"
 
 export class UnitSelection {
     sprite: PIXI.Sprite
@@ -52,7 +53,7 @@ export class UnitSelection {
         for (const u of selectableUnits.values()) {
             if (GUTILS.overlaps(
                     this.sprite.x, this.sprite.y, this.sprite.width, this.sprite.height,
-                    u.root.x - u.root.width/2, u.root.y - u.root.height/2, u.root.width, u.root.height
+                    u.root.x - CONSTS.UNIT_SIZE/2, u.root.y - CONSTS.UNIT_SIZE/2, CONSTS.UNIT_SIZE, CONSTS.UNIT_SIZE
             )) {
                 u.setSelected(true)
                 this.selectedUnits.add(u.data)

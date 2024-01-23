@@ -32,7 +32,7 @@ export class UnitRepresentation {
         this.border.scale.set(TEXTURES.baseScale)
         this.border.visible = false
         this.border.tint = COLORS.SELECTED_UNIT_BORDER_COLOR
-        
+
         this.root.addChild(this.body)
         this.root.addChild(this.border)
     }

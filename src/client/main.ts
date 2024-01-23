@@ -6,7 +6,7 @@ import * as GAME from "./game.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 
-const websocket = new WebSocket("ws://192.168.1.227:80")
+const websocket = new WebSocket("ws://192.168.0.121:80")
 NET.handleNetworking(websocket)
 
 // PIXI.settings.ROUND_PIXELS = false
