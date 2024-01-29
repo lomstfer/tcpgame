@@ -87,3 +87,10 @@ export class ServerUnitsUpdate {
         this.timeToUpdate = timeToUpdate
     }
 }
+
+export class ServerKillUnit {
+    unitId: string
+    constructor(unitId: string) {
+        this.unitId = unitId
+    }
+}

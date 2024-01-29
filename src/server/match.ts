@@ -33,7 +33,14 @@ export class Match {
     client1Units = new Map<string, Unit>()
     client2Units = new Map<string, Unit>()
 
-    private unitsGridPositionsToData = new Map<string, Unit>()
+    client1UnitsToPlace = 0
+    client2UnitsToPlace = 0
+
+    private timeOfLastUnit = Date.now()
+
+    private units1GridPositionsToData = new Map<string, Unit>()
+    private units2GridPositionsToData = new Map<string, Unit>()
+    private unitsGridPositionToOwner = new Map<string, /*clientid*/string>()
 
     private unitsUpdated = new Array<Unit>()
 
@@ -67,6 +74,10 @@ export class Match {
                 if (msgObj == undefined) {
                     break
                 }
+                if ((clientId == this.client1Socket.id && this.client1UnitsToPlace == 0) || 
+                    (clientId == this.client2Socket.id && this.client2UnitsToPlace == 0)) {
+                    break
+                }
                 this.spawnUnit(clientId, msgObj.position)
                 break
             }
@@ -75,7 +86,7 @@ export class Match {
                 if (msgObj == undefined) {
                     break
                 }
-                this.moveUnits(msgObj.unitIds, msgObj.position)
+                this.moveUnits(clientId, msgObj.unitIds, msgObj.position)
                 this.sendUnitsUpdate()
                 break
             }
@@ -88,13 +99,49 @@ export class Match {
 
     simulate(deltaTime: number) {
         for (const u of this.client1Units.values()) {
-            SIMULATION.moveUnit(u)
+            if (SIMULATION.moveUnit(u)) {
+                this.onUnitArrived(this.client1Socket.id, u.position)
+            }
         }
 
-        // console.log(this.getMatchTime())
-
         for (const u of this.client2Units.values()) {
-            SIMULATION.moveUnit(u)
+            if (SIMULATION.moveUnit(u)) {
+                this.onUnitArrived(this.client2Socket.id, u.position)
+            }
+        }
+
+        if (Date.now() - this.timeOfLastUnit >= SCONSTS.CLIENT_GET_NEW_UNIT_TIME) {
+            this.timeOfLastUnit = Date.now()
+            this.client1UnitsToPlace += 1
+            this.client2UnitsToPlace += 1
+            console.log(this.unitsGridPositionToOwner)
+        }
+    }
+
+    onUnitArrived(ownerOfArrivingId: string, position: Vec2) {
+        const p = JSON.stringify(position)
+        if (this.unitsGridPositionToOwner.has(p)) {
+            if (ownerOfArrivingId == this.client1Socket.id) {
+                const unit = this.units2GridPositionsToData.get(p)
+                if (unit != undefined) {
+                    this.client2Units.delete(unit.id)
+                    sendDelete(unit.id, this.client1Socket.socket, this.client2Socket.socket)
+                }
+            }
+            else {
+                const unit = this.units1GridPositionsToData.get(p)
+                if (unit != undefined) {
+                    this.client1Units.delete(unit.id)
+                    sendDelete(unit.id, this.client2Socket.socket, this.client1Socket.socket)
+                }
+            }
+        }
+        this.unitsGridPositionToOwner.set(p, ownerOfArrivingId)
+
+        function sendDelete(unitId: string, sock1: WebSocket, sock2: WebSocket) {
+            const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverKillUnit, new MSGOBJS.ServerKillUnit(unitId))
+            sock1.send(bytes)
+            sock2.send(bytes)
         }
     }
 
@@ -127,7 +174,7 @@ export class Match {
     spawnUnit(ownerId: string, position: Vec2) {
         const gridPos = UTILS.roundWorldPositionToGrid(position)
         const gridPosString = JSON.stringify(gridPos)
-        const occupyingUnit = this.unitsGridPositionsToData.get(gridPosString)
+        const occupyingUnit = this.units1GridPositionsToData.get(gridPosString) || this.units2GridPositionsToData.get(gridPosString)
         if (occupyingUnit != undefined) {
             return
             /* const diff = Vec2.sub(position, occupyingUnit.position)
@@ -135,19 +182,23 @@ export class Match {
                 unit.position = Vec2.sub(occupyingUnit.position, Vec2.randomDirection(CONSTS.UNIT_SIZE))
             } */
         }
-
+        const gridPositions = ownerId == this.client1Socket.id ? this.units1GridPositionsToData : this.units2GridPositionsToData
+        
         const unit = new Unit(SUTILS.generateRandomID(), gridPos)
-        this.unitsGridPositionsToData.set(gridPosString, unit)
-
+        gridPositions.set(gridPosString, unit)
+        this.unitsGridPositionToOwner.set(JSON.stringify(gridPos), ownerId)
+        
         const selfBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitSelf, new MSGOBJS.ServerSpawnUnitSelf(unit))
         const otherBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitOther, new MSGOBJS.ServerSpawnUnitOther(unit))
-
+        
         if (ownerId == this.client1Socket.id) {
+            this.client1UnitsToPlace -= 1
             this.client1Units.set(unit.id, unit)
             this.client1Socket.socket.send(selfBytes)
             this.client2Socket.socket.send(otherBytes)
         }
         else if (ownerId == this.client2Socket.id) {
+            this.client2UnitsToPlace -= 1
             this.client2Units.set(unit.id, unit)
             this.client2Socket.socket.send(selfBytes)
             this.client1Socket.socket.send(otherBytes)
@@ -159,23 +210,38 @@ export class Match {
         this.client2Socket.socket.send(bytes)
     }
 
-    moveUnits(unitIds: string[], here: Vec2) {
+    moveUnits(ownerId: string, unitIds: string[], here: Vec2) {
         const units: Unit[] = []
         // let averagePosition: Vec2 = new Vec2(0, 0)
+
+        let clientUnits: Map<string, Unit>
+        let selfUnitsGridPositions: Map<string, Unit>
+        let otherUnitsGridPositions: Map<string, Unit>
+        if (ownerId == this.client1Socket.id) {
+            clientUnits = this.client1Units
+            selfUnitsGridPositions = this.units1GridPositionsToData
+            otherUnitsGridPositions = this.units2GridPositionsToData
+        }
+        else {
+            clientUnits = this.client2Units
+            selfUnitsGridPositions = this.units2GridPositionsToData
+            otherUnitsGridPositions = this.units1GridPositionsToData
+        }
+
         for (const id of unitIds) {
-            const unit = this.client1Units.get(id) || this.client2Units.get(id)
+            const unit = clientUnits.get(id)
             if (unit != undefined) {
                 units.push(unit)
                 // averagePosition = Vec2.add(averagePosition, unit.position)
 
-                for (const [key, value] of this.unitsGridPositionsToData) {
-                    if (value == unit) {
-                        this.unitsGridPositionsToData.delete(key)
+                for (const [key, u] of selfUnitsGridPositions) {
+                    if (u == unit) {
+                        selfUnitsGridPositions.delete(key)
                     }
                 }
             }
         }
-        // averagePosition = Vec2.divide(averagePosition, units.length)
+
         const start = performance.now()
         for (const [i, unit] of units.entries()) {
             const updatedUnit = lodash.cloneDeep(unit)
@@ -191,7 +257,7 @@ export class Match {
                     moveTo = current
                 }
 
-                if (!this.gridPositionOccupied(moveTo)) {
+                if (!this.gridPositionOccupied(moveTo, selfUnitsGridPositions)) {
                     break
                 }
 
@@ -201,7 +267,7 @@ export class Match {
                     new Vec2(moveTo.x, moveTo.y + step),
                     new Vec2(moveTo.x, moveTo.y - step)
                 ]
-                
+
                 for (const n of neighbors) {
                     const ns = JSON.stringify(n)
                     if (!visitedOrWillBe.has(ns)) {
@@ -211,22 +277,30 @@ export class Match {
                 }
             }
 
+            const roundedPositionString = JSON.stringify(moveTo)
+            selfUnitsGridPositions.set(roundedPositionString, unit)
+
+            if (moveTo.x == updatedUnit.position.x && moveTo.y == updatedUnit.position.y) {
+                continue
+            }
+            
             updatedUnit.movingTo = moveTo
             this.unitsUpdated.push(updatedUnit)
-
-            const roundedPositionString = JSON.stringify(UTILS.roundWorldPositionToGrid(updatedUnit.movingTo))
-            this.unitsGridPositionsToData.set(roundedPositionString, unit)
-
+            
+            if (this.gridPositionOccupied(moveTo, otherUnitsGridPositions)) {
+                console.log("occcccccc")
+            }
+            
             const delay = this.getInputDelay();
             (new NanoTimer()).setTimeout(() => {
+                const sp = JSON.stringify(unit.position)
+                if (this.unitsGridPositionToOwner.get(sp) == ownerId) {
+                    this.unitsGridPositionToOwner.delete(sp)
+                }
                 unit.movingTo = moveTo
             }, "", delay.toString() + "m")
         }
         console.log(performance.now() - start)
-    }
-
-    getUnitsFromIds(ids: string[]) {
-
     }
 
     consumeAlreadyUpdatedUnits(): Unit[] {
@@ -265,8 +339,8 @@ export class Match {
         return rounded
     } */
 
-    gridPositionOccupied(position: Vec2): boolean {
-        const has = this.unitsGridPositionsToData.has(JSON.stringify(position))
+    gridPositionOccupied(position: Vec2, positions: Map<string, Unit>): boolean {
+        const has = positions.has(JSON.stringify(position))
         return has
     }
 }

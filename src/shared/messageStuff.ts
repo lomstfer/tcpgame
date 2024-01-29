@@ -17,6 +17,7 @@ export enum MessageId {
     serverSpawnUnitOther,
     clientMatchMoveUnits,
     serverUnitsUpdate,
+    serverKillUnit,
 }
 
 export function getByteFromMessage(messageID: MessageId): Uint8Array {

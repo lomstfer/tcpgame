@@ -132,3 +132,6 @@ NET.netEventEmitter.on("spawnServerUnitOther", unit => {
 NET.netEventEmitter.on("serverUnitsUpdate", data => {
     game?.handleServerUpdate(data[0], data[1], data[2])
 })
+NET.netEventEmitter.on("killUnit", id => {
+    game?.killUnit(id)
+})

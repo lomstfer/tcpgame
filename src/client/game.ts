@@ -36,7 +36,7 @@ export class GameInstance {
 
     private selfUnits = new Map<string, UnitRepresentation>()
     private otherUnits = new Map<string, UnitRepresentation>()
-    private selfUnitsUnconfirmed = new Array<UnitRepresentation>()
+    // private selfUnitsUnconfirmed = new Array<UnitRepresentation>()
     private oldUnitsPositions = new Map<string, Vec2>()
 
     constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
@@ -160,11 +160,11 @@ export class GameInstance {
         }
     }
 
-    private spawnUnitSelfUnconfirmed(position: Vec2) {
+    /* private spawnUnitSelfUnconfirmed(position: Vec2) {
         const unitR = new UnitRepresentation(new Unit("none", position), COLORS.SELF_COLOR)
         this.worldRoot.addChild(unitR.root)
         this.selfUnitsUnconfirmed.push(unitR)
-    }
+    } */
 
     spawnUnitSelf(unit: Unit) {
         /* this.worldRoot.removeChild(this.selfUnitsUnconfirmed[0].root)
@@ -205,6 +205,7 @@ export class GameInstance {
             setTimeout(() => { this.enforceServerUpdate(units, timeSinceSent + timeUntilExecute) }, timeUntilExecute)
         }
     }
+
     timeSinceLastUpdate: number | undefined
     lastUpdateTime: number | undefined
     private enforceServerUpdate(units: Unit[], timeSinceSent: number) {
@@ -234,5 +235,15 @@ export class GameInstance {
                 unit.data.movingTo = updatedUnit.movingTo
             }
         }
+    }
+
+    killUnit(id: string) {
+        const unit = this.selfUnits.get(id) || this.otherUnits.get(id)
+        if (!unit) {
+            return
+        }
+        this.worldRoot.removeChild(unit.root)
+        this.selfUnits.delete(id) || this.otherUnits.delete(id)
+        this.oldUnitsPositions.delete(id)
     }
 }
