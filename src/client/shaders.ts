@@ -88,30 +88,50 @@ export const outlineShader = `
     }
 `
 
-/* export const smoothShader = `
+export const stateShader = `
+attribute vec2 aVertexPosition;
+attribute vec2 aTextureCoord;
+
+uniform mat3 projectionMatrix;
+
+varying vec2 vTextureCoord;
+
+uniform float uTime;
+
+void main(void) {
+    vec2 position = (projectionMatrix * vec3(aVertexPosition, 1.0)).xy;
+
+    vec2 displacement = vec2(sin(uTime + aVertexPosition.x), sin(uTime + aVertexPosition.y)) * 0.01;
+    position += displacement;
+
+    gl_Position = vec4(position, 0.0, 1.0);
+    vTextureCoord = aTextureCoord;
+}
+`
+export const stateFilter = new Filter(stateShader)
+
+export const shapeFragShader = `
 precision highp float;
 
 uniform sampler2D uSampler;
 varying vec2 vTextureCoord;
 
-void main()
-{
-    // Sample the pixel color
-    vec3 pixelColor = texture2D(uSampler, vTextureCoord);
+uniform vec4 inputSize;
+uniform vec4 outputFrame;
 
-    // Sobel filter for edge detection
-    float edge = length(texture2D(uSampler, vTextureCoord + vec2(-1, -1)).rgb * vec3(-1, -1, -1) +
-                        texture2D(uSampler, vTextureCoord + vec2( 0, -1)).rgb * vec3(-2, -2, -2) +
-                        texture2D(uSampler, vTextureCoord + vec2( 1, -1)).rgb * vec3(-1, -1, -1) +
-                        texture2D(uSampler, vTextureCoord + vec2(-1,  1)).rgb * vec3( 1,  1,  1) +
-                        texture2D(uSampler, vTextureCoord + vec2( 0,  1)).rgb * vec3( 2,  2,  2) +
-                        texture2D(uSampler, vTextureCoord + vec2( 1,  1)).rgb * vec3( 1,  1,  1));
+uniform bool spreadOut;
 
-    // Apply smoothing
-    float smoothness = 1.0 - smoothstep(0.02, 0.05, edge);
+void main(void) {
+    vec4 color = texture2D(uSampler, vTextureCoord);
+    
+    vec2 pos = (vTextureCoord);
 
-    // Output the final color
-    gl_FragColor = vec4(pixelColor, 1.0) * smoothness;
+    if (spreadOut) {
+        color.r *= 0.8;
+        color.g *= 0.8;
+        color.b *= 0.8;
+    }
+    
+    gl_FragColor = color;
 }
 `
-export const smoothFilter = new Filter(undefined, smoothShader) */

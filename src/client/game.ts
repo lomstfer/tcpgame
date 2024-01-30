@@ -12,6 +12,7 @@ import { UnitRepresentation } from "./unitRepresentation.js"
 import * as COLORS from "./colors.js"
 import { Camera } from "./camera.js"
 import * as SIMULATION from "../shared/simulation.js"
+import { stateFilter } from "./shaders.js"
 
 type gameEvents = {
     spawnUnitCommand: Vec2
@@ -60,11 +61,11 @@ export class GameInstance {
             this.appStage.addChild(this.worldRoot)
         }
 
-        const t = new PIXI.Graphics()
-        t.beginFill(0xffffff)
-        t.drawCircle(0, 0, 10)
-        t.endFill()
-        this.worldRoot.addChild(t)
+        const origo = new PIXI.Graphics()
+        origo.beginFill(0x000000)
+        origo.drawCircle(0, 0, 5)
+        origo.endFill()
+        this.worldRoot.addChild(origo)
 
         this.worldRoot.addChild(this.grid.sprite)
         this.worldRoot.addChild(this.unitSelection.sprite)
@@ -131,6 +132,8 @@ export class GameInstance {
             this.worldRoot.x = -this.camera.worldPosition.x + CONSTS.GAME_WIDTH / 2
             this.worldRoot.y = -this.camera.worldPosition.y + CONSTS.GAME_HEIGHT / 2
         }
+
+        stateFilter.uniforms.uTime = time / 1000
     }
 
     fixedUpdate() {
@@ -152,11 +155,11 @@ export class GameInstance {
     private moveUnits() {
         for (const u of this.selfUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
-            SIMULATION.moveUnit(u.data)
+            u.setMoving(SIMULATION.moveUnit(u.data)[1])
         }
         for (const u of this.otherUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
-            SIMULATION.moveUnit(u.data)
+            u.setMoving(SIMULATION.moveUnit(u.data)[1])
         }
     }
 

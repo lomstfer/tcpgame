@@ -99,14 +99,14 @@ export class Match {
 
     simulate(deltaTime: number) {
         for (const u of this.client1Units.values()) {
-            if (SIMULATION.moveUnit(u)) {
-                this.onUnitArrived(this.client1Socket.id, u.position)
+            if (SIMULATION.moveUnit(u)[0]) {
+                this.onUnitArrived(this.client1Socket.id, u.position, u)
             }
         }
 
         for (const u of this.client2Units.values()) {
-            if (SIMULATION.moveUnit(u)) {
-                this.onUnitArrived(this.client2Socket.id, u.position)
+            if (SIMULATION.moveUnit(u)[0]) {
+                this.onUnitArrived(this.client2Socket.id, u.position, u)
             }
         }
 
@@ -118,21 +118,27 @@ export class Match {
         }
     }
 
-    onUnitArrived(ownerOfArrivingId: string, position: Vec2) {
+    onUnitArrived(ownerOfArrivingId: string, position: Vec2, unit: Unit) {
         const p = JSON.stringify(position)
         if (this.unitsGridPositionToOwner.has(p)) {
             if (ownerOfArrivingId == this.client1Socket.id) {
-                const unit = this.units2GridPositionsToData.get(p)
-                if (unit != undefined) {
-                    this.client2Units.delete(unit.id)
-                    sendDelete(unit.id, this.client1Socket.socket, this.client2Socket.socket)
+                this.units1GridPositionsToData.set(p, unit)
+                
+                const deletedUnit = this.units2GridPositionsToData.get(p)
+                if (deletedUnit != undefined) {
+                    this.units2GridPositionsToData.delete(p)
+                    this.client2Units.delete(deletedUnit.id)
+                    sendDelete(deletedUnit.id, this.client1Socket.socket, this.client2Socket.socket)
                 }
             }
             else {
-                const unit = this.units1GridPositionsToData.get(p)
-                if (unit != undefined) {
-                    this.client1Units.delete(unit.id)
-                    sendDelete(unit.id, this.client2Socket.socket, this.client1Socket.socket)
+                this.units2GridPositionsToData.set(p, unit)
+                
+                const deletedUnit = this.units1GridPositionsToData.get(p)
+                if (deletedUnit != undefined) {
+                    this.units1GridPositionsToData.delete(p)
+                    this.client1Units.delete(deletedUnit.id)
+                    sendDelete(deletedUnit.id, this.client1Socket.socket, this.client2Socket.socket)
                 }
             }
         }

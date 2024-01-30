@@ -4,7 +4,7 @@ import * as COLORS from "./colors.js"
 import { Vec2 } from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
 import * as TEXTURES from "./textures.js"
-// import { smoothFilter } from "./shaders.js"
+import { shapeFragShader } from "./shaders.js"
 
 export class UnitRepresentation {
     data: Unit
@@ -13,6 +13,10 @@ export class UnitRepresentation {
     border: PIXI.Sprite
 
     color: number
+
+    shapeFilter = new PIXI.Filter(undefined, shapeFragShader, {
+        spreadOut: false
+    })
     
     constructor(data: Unit, color: number) {
         this.data = data
@@ -25,7 +29,7 @@ export class UnitRepresentation {
         this.body.pivot.set(this.body.width/2, this.body.height/2)
         this.body.scale.set(TEXTURES.baseScale)
         this.body.tint = color
-        // this.body.filters = [smoothFilter]
+        this.body.filters = [this.shapeFilter]
 
         this.border = PIXI.Sprite.from(TEXTURES.textures.unit1Border)
         this.border.pivot.set(this.border.width/2, this.border.height/2)
@@ -39,5 +43,9 @@ export class UnitRepresentation {
 
     setSelected(selected: boolean) {
         this.border.visible = selected
+    }
+
+    setMoving(moving: boolean) {
+        this.shapeFilter.uniforms.spreadOut = !moving
     }
 }
