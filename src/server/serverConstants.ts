@@ -1,2 +1,1 @@
 export const INPUT_DELAY_MINIMUM_MS = 100
-export const CLIENT_GET_NEW_UNIT_TIME = 100

@@ -88,3 +88,32 @@ canvas {
     background-color: rgba(29, 29, 29, 0.836);
     pointer-events: all;
 }
+
+#next-unit-load {
+    position: absolute;
+    left: 10;
+    top: calc(50% + 50px);
+    transform: translateY(-50%);
+    scale: calc(var(--scale) * 5);
+
+    width: 100px;
+    height: 40px;
+}
+
+#next-move-load {
+    position: absolute;
+    left: 10;
+    top: calc(50% - 50px);
+    transform: translateY(-50%);
+    scale: calc(var(--scale) * 5);
+    
+    width: 100px;
+    height: 40px;
+    background-color: white;
+}
+
+.next-load-text {
+    position: absolute;
+    left: 0;
+    rotate: 90deg;
+}

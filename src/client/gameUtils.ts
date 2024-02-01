@@ -33,7 +33,6 @@ export function scaleAndCenter(stage: PIXI.Container, virtualWidth: number, virt
         posX = 0
         posY = 0
     }
-    console.log(scale)
     stage.scale.set(scale)
     stage.position.x = posX
     stage.position.y = posY

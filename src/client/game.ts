@@ -40,6 +40,12 @@ export class GameInstance {
     // private selfUnitsUnconfirmed = new Array<UnitRepresentation>()
     private oldUnitsPositions = new Map<string, Vec2>()
 
+    private nextUnitLoadElement: HTMLElement | null
+    private nextUnitLoadElementOrgWidth: number | undefined
+
+    private nextMoveLoadElement: HTMLElement | null
+    private nextMoveLoadElementOrgWidth: number | undefined
+
     constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
         if (matchData.team) {
             COLORS.setSelfColor(COLORS.PLAYER_1)
@@ -49,6 +55,17 @@ export class GameInstance {
             COLORS.setSelfColor(COLORS.PLAYER_2)
             COLORS.setOtherColor(COLORS.PLAYER_1)
         }
+
+        this.nextUnitLoadElement = document.getElementById("next-unit-load")
+        if (this.nextUnitLoadElement) {
+            this.nextUnitLoadElementOrgWidth = +window.getComputedStyle(this.nextUnitLoadElement).width.split("px")[0]
+            this.nextUnitLoadElement.style.backgroundColor = "#" + COLORS.SELF_COLOR.toString(16)
+        }
+        this.nextMoveLoadElement = document.getElementById("next-move-load")
+        if (this.nextMoveLoadElement) {
+            this.nextMoveLoadElementOrgWidth = +window.getComputedStyle(this.nextMoveLoadElement).width.split("px")[0]
+        }
+
         this.unitSelection = new UnitSelection()
 
         this.appStage = appStage
@@ -134,6 +151,21 @@ export class GameInstance {
         }
 
         stateFilter.uniforms.uTime = time / 1000
+
+        if (this.nextUnitLoadElement) {
+            let itime = Math.round(time) % CONSTS.CLIENT_GET_NEW_UNIT_TIME / CONSTS.CLIENT_GET_NEW_UNIT_TIME
+            if (this.nextUnitLoadElementOrgWidth) {
+                itime *= this.nextUnitLoadElementOrgWidth
+            }
+            this.nextUnitLoadElement.style.width = itime.toString()+"px"
+        }
+        if (this.nextMoveLoadElement) {
+            let itime = Math.round(time) % CONSTS.CLIENT_GET_NEW_MOVE_TIME / CONSTS.CLIENT_GET_NEW_MOVE_TIME
+            if (this.nextMoveLoadElementOrgWidth) {
+                itime *= this.nextMoveLoadElementOrgWidth
+            }
+            this.nextMoveLoadElement.style.width = itime.toString()+"px"
+        }
     }
 
     fixedUpdate() {

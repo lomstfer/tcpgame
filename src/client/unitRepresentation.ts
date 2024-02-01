@@ -39,13 +39,16 @@ export class UnitRepresentation {
 
         this.root.addChild(this.body)
         this.root.addChild(this.border)
-    }
 
+        this.root.zIndex = 1
+    }
+    
     setSelected(selected: boolean) {
         this.border.visible = selected
     }
-
+    
     setMoving(moving: boolean) {
         this.shapeFilter.uniforms.spreadOut = !moving
+        this.root.zIndex = moving ? 2 : 1
     }
 }
