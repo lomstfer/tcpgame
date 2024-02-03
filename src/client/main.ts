@@ -28,18 +28,18 @@ document.addEventListener("contextmenu", (event) => {
     event.preventDefault()
 })
 
-let name = ""
+let name = "me"
 
 const gameUI = document.getElementById("game-ui")
 const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    if (allow)
-        NET.findMatch(websocket, "nameo") // for development speed
-    /* if (findMatchForm) {
+    /* if (allow)
+        NET.findMatch(websocket, "player2") // for development speed */
+    if (findMatchForm) {
         findMatchForm.style.display = allow ? "initial" : "none"
-    } */
+    }
 })
 
 const findMatchButton = document.getElementById("find-match-button")
@@ -102,10 +102,15 @@ pixiApp.ticker.add(() => {
     const dt = pixiApp.ticker.deltaMS / 1000
     
     if (timeEl) {
-        timeEl.textContent = (NET.getMatchTimeMS() / 1000).toFixed(1)
+        let milliseconds = NET.getMatchTimeMS()
+        let seconds = Math.floor(milliseconds / 1000)
+        let minutes = Math.floor(seconds / 60)
+        seconds = seconds - minutes * 60
+        milliseconds = milliseconds - seconds * 1000 - minutes * 60
+        timeEl.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds/100)}`
     }
 
-    game?.update(dt, NET.getMatchTimeMS(), keyInput)
+    game?.update(dt*1000, NET.getMatchTimeMS(), keyInput)
     accumulator += dt
     while (accumulator >= CONSTS.WORLD_UPDATE_S) {
         game?.fixedUpdate()
@@ -123,14 +128,14 @@ GAME.gameEventEmitter.on("moveUnitsCommand", data => {
     NET.sendMoveUnits(websocket, data)
 })
 
-NET.netEventEmitter.on("spawnServerUnitSelf", unit => {
-    game?.spawnUnitSelf(unit)
+NET.netEventEmitter.on("spawnServerUnitSelf", data => {
+    game?.spawnUnitSelf(data[0], data[1])
 })
-NET.netEventEmitter.on("spawnServerUnitOther", unit => {
-    game?.spawnUnitOther(unit)
+NET.netEventEmitter.on("spawnServerUnitOther", data => {
+    game?.spawnUnitOther(data[0], data[1])
 })
 NET.netEventEmitter.on("serverUnitsUpdate", data => {
-    game?.handleServerUpdate(data[0], data[1], data[2])
+    game?.handleServerUnitsUpdate(data[0], data[1])
 })
 NET.netEventEmitter.on("killUnit", id => {
     game?.killUnit(id)

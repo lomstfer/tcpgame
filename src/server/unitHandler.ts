@@ -44,12 +44,12 @@ export class UnitHandler {
         ;(new NanoTimer()).setInterval(() => {
             this.client1UnitsRemaining += 1
             this.client2UnitsRemaining += 1
-        }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME + "m")
+        }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
 
         ;(new NanoTimer()).setInterval(() => {
             this.client1MovesRemaining += 1
             this.client2MovesRemaining += 1
-        }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME + "m")
+        }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
     }
 
     simulate() {
@@ -93,7 +93,7 @@ export class UnitHandler {
         this.unitsGridPositionToOwner.set(p, ownerOfArrivingId)
     }
 
-    trySpawnUnit(ownerId: string, position: Vec2) {
+    trySpawnUnit(ownerId: string, position: Vec2, timeNow: number, delay: number) {
         if ((ownerId == this.client1Id && this.client1UnitsRemaining == 0) ||
             (ownerId == this.client2Id && this.client2UnitsRemaining == 0)) {
             return
@@ -115,8 +115,14 @@ export class UnitHandler {
         gridPositions.set(gridPosString, unit)
         this.unitsGridPositionToOwner.set(JSON.stringify(gridPos), ownerId)
 
-        const selfBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitSelf, new MSGOBJS.ServerSpawnUnitSelf(unit))
-        const otherBytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverSpawnUnitOther, new MSGOBJS.ServerSpawnUnitOther(unit))
+        const selfBytes = MSG.getBytesFromMessageAndObj(
+            MSG.MessageId.serverSpawnUnitSelf, 
+            new MSGOBJS.ServerSpawnUnitSelf(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
+        )
+        const otherBytes = MSG.getBytesFromMessageAndObj(
+            MSG.MessageId.serverSpawnUnitOther, 
+            new MSGOBJS.ServerSpawnUnitOther(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
+        )
 
         if (ownerId == this.client1Id) {
             this.client1UnitsRemaining -= 1
@@ -170,7 +176,7 @@ export class UnitHandler {
         }
 
         const start = performance.now()
-        for (const [i, unit] of units.entries()) {
+        for (const unit of units) {
             const updatedUnit = lodash.cloneDeep(unit)
 
             let moveTo = UTILS.roundWorldPositionToGrid(here)
@@ -213,10 +219,6 @@ export class UnitHandler {
 
             updatedUnit.movingTo = moveTo
             this.unitsUpdated.push(updatedUnit)
-
-            if (this.gridPositionOccupied(moveTo, otherUnitsGridPositions)) {
-                console.log("occcccccc")
-            }
 
             const delay = inputDelay;
             (new NanoTimer()).setTimeout(() => {

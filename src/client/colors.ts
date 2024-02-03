@@ -5,5 +5,5 @@ export let OTHER_COLOR: number = 0xffffff
 export function setSelfColor(color: number) { SELF_COLOR = color }
 export function setOtherColor(color: number) { OTHER_COLOR = color }
 
-export const UNIT_SELECTION_COLOR = 0xff0000
+export const UNIT_SELECTION_COLOR: [number, number] = [0xffffff, 0.2]
 export const SELECTED_UNIT_BORDER_COLOR = 0xffffff

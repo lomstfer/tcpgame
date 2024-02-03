@@ -54,17 +54,30 @@ export class ClientSpawnUnitRequest {
     }
 }
 
+export class CommandTimeData {
+    timeSent: number
+    timeToExecute: number
+    constructor(timeSent: number, timeToExecute: number) {
+        this.timeSent = timeSent
+        this.timeToExecute = timeToExecute
+    }
+}
+
 export class ServerSpawnUnitSelf {
     unit: Unit
-    constructor(unit: Unit) {
+    timeData: CommandTimeData
+    constructor(unit: Unit, timeData: CommandTimeData) {
         this.unit = unit
+        this.timeData = timeData
     }
 }
 
 export class ServerSpawnUnitOther {
     unit: Unit
-    constructor(unit: Unit) {
+    timeData: CommandTimeData
+    constructor(unit: Unit, timeData: CommandTimeData) {
         this.unit = unit
+        this.timeData = timeData
     }
 }
 
@@ -78,13 +91,11 @@ export class ClientMoveUnits {
 }
 
 export class ServerUnitsUpdate {
-    timeSent: number
     units: Unit[]
-    timeToUpdate: number
-    constructor(timeSent: number, units: Unit[], timeToUpdate: number) {
-        this.timeSent = timeSent
+    timeData: CommandTimeData
+    constructor(units: Unit[], timeData: CommandTimeData) {
         this.units = units
-        this.timeToUpdate = timeToUpdate
+        this.timeData = timeData
     }
 }
 

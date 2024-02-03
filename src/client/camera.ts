@@ -9,8 +9,8 @@ export class Camera {
     private targetPosition = new Vec2(0, 0)
     worldPosition = new Vec2(0, 0)
     interpPosition = new Vec2(0, 0)
-    private stiffness = 6
-    private speed = 200
+    private stiffness = 0.006
+    private speed = 0.2
 
     getMouseWorldPosition(
         mousePositionOnCanvas: PIXI.Point | Vec2, 

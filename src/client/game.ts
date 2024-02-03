@@ -13,6 +13,8 @@ import * as COLORS from "./colors.js"
 import { Camera } from "./camera.js"
 import * as SIMULATION from "../shared/simulation.js"
 import { stateFilter } from "./shaders.js"
+import { ExecuteDelayData } from "./executeDelayData.js"
+import { UI } from "./ui.js"
 
 type gameEvents = {
     spawnUnitCommand: Vec2
@@ -24,9 +26,9 @@ export class GameInstance {
     private appStage: PIXI.Container<PIXI.DisplayObject>
 
     private worldRoot: PIXI.Container
-    private elapsedTime = 0
 
     private camera = new Camera()
+    private ui: UI
 
     private mouseDown = false
     private mouseWorldPosition: Vec2 | undefined = undefined
@@ -37,14 +39,10 @@ export class GameInstance {
 
     private selfUnits = new Map<string, UnitRepresentation>()
     private otherUnits = new Map<string, UnitRepresentation>()
-    // private selfUnitsUnconfirmed = new Array<UnitRepresentation>()
     private oldUnitsPositions = new Map<string, Vec2>()
 
-    private nextUnitLoadElement: HTMLElement | null
-    private nextUnitLoadElementOrgWidth: number | undefined
-
-    private nextMoveLoadElement: HTMLElement | null
-    private nextMoveLoadElementOrgWidth: number | undefined
+    private selfUnitsToPlace: number = 0
+    private selfMovesLeft: number = 0
 
     constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
         if (matchData.team) {
@@ -56,16 +54,7 @@ export class GameInstance {
             COLORS.setOtherColor(COLORS.PLAYER_1)
         }
 
-        this.nextUnitLoadElement = document.getElementById("next-unit-load")
-        if (this.nextUnitLoadElement) {
-            this.nextUnitLoadElementOrgWidth = +window.getComputedStyle(this.nextUnitLoadElement).width.split("px")[0]
-            this.nextUnitLoadElement.style.backgroundColor = "#" + COLORS.SELF_COLOR.toString(16)
-        }
-        this.nextMoveLoadElement = document.getElementById("next-move-load")
-        if (this.nextMoveLoadElement) {
-            this.nextMoveLoadElementOrgWidth = +window.getComputedStyle(this.nextMoveLoadElement).width.split("px")[0]
-        }
-
+        this.ui = new UI()
         this.unitSelection = new UnitSelection()
 
         this.appStage = appStage
@@ -134,10 +123,8 @@ export class GameInstance {
 
         this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
         if (this.mouseWorldPosition) {
-
             if (keys.keyPressed("KeyR")) {
                 gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
-                //this.spawnUnitSelfUnconfirmed(this.mouseWorldPosition)
             }
 
             if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
@@ -152,20 +139,9 @@ export class GameInstance {
 
         stateFilter.uniforms.uTime = time / 1000
 
-        if (this.nextUnitLoadElement) {
-            let itime = Math.round(time) % CONSTS.CLIENT_GET_NEW_UNIT_TIME / CONSTS.CLIENT_GET_NEW_UNIT_TIME
-            if (this.nextUnitLoadElementOrgWidth) {
-                itime *= this.nextUnitLoadElementOrgWidth
-            }
-            this.nextUnitLoadElement.style.width = itime.toString()+"px"
-        }
-        if (this.nextMoveLoadElement) {
-            let itime = Math.round(time) % CONSTS.CLIENT_GET_NEW_MOVE_TIME / CONSTS.CLIENT_GET_NEW_MOVE_TIME
-            if (this.nextMoveLoadElementOrgWidth) {
-                itime *= this.nextMoveLoadElementOrgWidth
-            }
-            this.nextMoveLoadElement.style.width = itime.toString()+"px"
-        }
+        const uiData = this.ui.update(deltaTime, time, this.selfUnitsToPlace, this.selfMovesLeft)
+        this.selfUnitsToPlace = uiData[0]
+        this.selfMovesLeft = uiData[1]
     }
 
     fixedUpdate() {
@@ -195,40 +171,42 @@ export class GameInstance {
         }
     }
 
-    /* private spawnUnitSelfUnconfirmed(position: Vec2) {
-        const unitR = new UnitRepresentation(new Unit("none", position), COLORS.SELF_COLOR)
-        this.worldRoot.addChild(unitR.root)
-        this.selfUnitsUnconfirmed.push(unitR)
-    } */
+    spawnUnitSelf(delayData: ExecuteDelayData, unit: Unit) {
+        setTimeout(() => {
+            const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
+            this.worldRoot.addChild(unitR.root)
+            this.selfUnits.set(unitR.data.id, unitR)
 
-    spawnUnitSelf(unit: Unit) {
-        /* this.worldRoot.removeChild(this.selfUnitsUnconfirmed[0].root)
-        this.selfUnitsUnconfirmed.splice(0, 1) */
-        const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
-        this.worldRoot.addChild(unitR.root)
-        this.selfUnits.set(unitR.data.id, unitR)
+            this.selfUnitsToPlace -= 1
+        }, delayData.timeUntilExecute)
     }
 
-    spawnUnitOther(unit: Unit) {
-        const unitR = new UnitRepresentation(unit, COLORS.OTHER_COLOR)
-        this.worldRoot.addChild(unitR.root)
-        this.otherUnits.set(unitR.data.id, unitR)
+    spawnUnitOther(delayData: ExecuteDelayData, unit: Unit) {
+        setTimeout(() => {
+            const unitR = new UnitRepresentation(unit, COLORS.OTHER_COLOR)
+            this.worldRoot.addChild(unitR.root)
+            this.otherUnits.set(unitR.data.id, unitR)
+        }, delayData.timeUntilExecute)
     }
 
-    handleServerUpdate(timeSinceSent: number, units: Unit[], timeUntilExecute: number) {
-        console.log("exe:", timeUntilExecute)
-        for (const updatedUnit of units) {
-            if (updatedUnit.movingTo == undefined) {
-                console.log("updatedUnit.movingTo == undefined   (WHAT)")
-                continue
-            }
-            const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
-            if (unit == undefined) {
-                continue
-            }
+    handleServerUnitsUpdate(delayData: ExecuteDelayData, units: Unit[]) {
+        if (this.selfUnits.has(units[0].id)) {
+            this.selfMovesLeft -= 1
+        }
 
-            if (timeUntilExecute < 0) {
-                const timeIntoMove = -timeUntilExecute
+        console.log("exe:", delayData.timeUntilExecute)
+        if (delayData.timeUntilExecute < 0) {
+            for (const updatedUnit of units) {
+                if (updatedUnit.movingTo == undefined) {
+                    console.log("updatedUnit.movingTo == undefined   (WHAT)")
+                    continue
+                }
+                const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
+                if (unit == undefined) {
+                    continue
+                }
+
+                const timeIntoMove = -delayData.timeUntilExecute
                 const totalDistance = Vec2.lengthOf(Vec2.sub(updatedUnit.position, updatedUnit.movingTo))
                 const distanceIntoMove = timeIntoMove * 0.001 * CONSTS.UNIT_SPEED
                 const ratio = distanceIntoMove / totalDistance
@@ -236,8 +214,10 @@ export class GameInstance {
                 unit.data.movingTo = updatedUnit.movingTo
             }
         }
-        if (timeUntilExecute >= 0) {
-            setTimeout(() => { this.enforceServerUpdate(units, timeSinceSent + timeUntilExecute) }, timeUntilExecute)
+        else {
+            setTimeout(() => {
+                this.enforceServerUpdate(units, delayData.timeSinceSent + delayData.timeUntilExecute)
+            }, delayData.timeUntilExecute)
         }
     }
 

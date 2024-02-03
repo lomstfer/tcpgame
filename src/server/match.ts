@@ -73,7 +73,7 @@ export class Match {
                     break
                 }
                 
-                this.unitHandler.trySpawnUnit(clientId, msgObj.position)
+                this.unitHandler.trySpawnUnit(clientId, msgObj.position, this.getMatchTime(), this.getInputDelay())
                 break
             }
             case MSG.MessageId.clientMatchMoveUnits: {
@@ -121,7 +121,7 @@ export class Match {
         const delay = this.getInputDelay()
         // console.log("delay:", delay)
         const matchTime = this.getMatchTime()
-        const obj = new MSGOBJS.ServerUnitsUpdate(matchTime, units, matchTime + delay)
+        const obj = new MSGOBJS.ServerUnitsUpdate(units, new MSGOBJS.CommandTimeData(matchTime, matchTime + delay))
         const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverUnitsUpdate, obj)
         this.client1Socket.socket.send(bytes)
         this.client2Socket.socket.send(bytes)

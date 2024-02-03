@@ -5,6 +5,7 @@ import { Vec2 } from "../shared/utils.js"
 import * as CONSTS from "../shared/constants.js"
 import * as TEXTURES from "./textures.js"
 import { shapeFragShader } from "./shaders.js"
+import * as LAYERS from "./layers.js"
 
 export class UnitRepresentation {
     data: Unit
@@ -49,6 +50,6 @@ export class UnitRepresentation {
     
     setMoving(moving: boolean) {
         this.shapeFilter.uniforms.spreadOut = !moving
-        this.root.zIndex = moving ? 2 : 1
+        this.root.zIndex = moving ? LAYERS.UNIT_MOVING : LAYERS.UNIT_STILL
     }
 }

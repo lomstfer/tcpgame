@@ -1,4 +1,5 @@
 import * as UTILS from "../shared/utils.js"
+import { TIME_SYNCS_TO_DO } from "./networking.js"
 
 export class ServerTimeSyncer {
     latencyArray: number[] = []
@@ -12,7 +13,7 @@ export class ServerTimeSyncer {
         
         let difference: number = Date.now() - (serverTime + latency)
 
-        if (this.latencyArray.length > 10 && !this.timeSynced) {
+        if (this.latencyArray.length > TIME_SYNCS_TO_DO && !this.timeSynced) {
             this.latencyArray.sort((a, b) => a - b)
             const median = UTILS.getMedian(this.latencyArray)
             const avgDiff = UTILS.getAverageDiffFromMedian(this.latencyArray, median)

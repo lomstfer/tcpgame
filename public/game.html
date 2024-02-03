@@ -10,34 +10,49 @@
 </head>
 
 <body>
-    
+
     <div id="background"></div>
-    
+
     <div id="find-match-inputs">
         <input type="text" id="find-match-name">
         <button id="find-match-button">find match</button>
     </div>
-        
+
     <div id="game-ui">
         <h2 id="versus-text"></h2>
-        
-        <h1 id="time"></h1>
 
-        <div id="next-unit-load">
-            <div class="next-load-text">unit</div>
+        <div id="time-parent">
+            <div id="time"></div>
         </div>
-        <div id="next-move-load">
-            <div class="next-load-text">move</div>
+
+        <div id="next-load-parent">
+            <div class="next-load-i-parent">
+                <div class="next-load-bar-parent" id="next-unit-load-bar-parent">
+                    <div class="next-load-text">units</div>
+                    <div id="next-unit-load-bar-fill" class="next-load-bar-fill"></div>
+                </div>
+                <div id="next-unit-load-number">0</div>
+            </div>
+
+            <div style="height: 50%;"></div>
+
+            <div class="next-load-i-parent">
+                <div class="next-load-bar-parent" id="next-move-load-bar-parent">
+                    <div class="next-load-text">moves</div>
+                    <div id="next-move-load-bar-fill" class="next-load-bar-fill"></div>
+                </div>
+                <div id="next-move-load-number">0</div>
+            </div>
         </div>
-        
-        <div id="inventory-parent">
+
+        <!-- <div id="inventory-parent">
             <div id="inventory">
                 <h2>inventory</h2>
                 <div id="inventory-slots">
     
                 </div>
             </div>
-        </div>
+        </div> -->
     </div>
 
     <script src="public/js/allthecode.js"></script>

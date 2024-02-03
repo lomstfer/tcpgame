@@ -5,6 +5,7 @@ import * as GUTILS from "./gameUtils.js"
 import * as COLORS from "./colors.js"
 import { Unit } from "../shared/unit.js"
 import * as CONSTS from "../shared/constants.js"
+import * as LAYERS from "./layers.js"
 
 export class UnitSelection {
     sprite: PIXI.Sprite
@@ -19,9 +20,9 @@ export class UnitSelection {
         this.sprite.height = 0
         this.sprite.x = 0
         this.sprite.y = 0
-        this.sprite.tint = COLORS.UNIT_SELECTION_COLOR
-        this.sprite.alpha = 0.3
-        this.sprite.zIndex = 1
+        this.sprite.tint = COLORS.UNIT_SELECTION_COLOR[0]
+        this.sprite.alpha = COLORS.UNIT_SELECTION_COLOR[1]
+        this.sprite.zIndex = LAYERS.UNIT_SELECTION
 
         window.addEventListener("mouseout", () => {
             this.end()
