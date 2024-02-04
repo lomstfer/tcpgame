@@ -30,7 +30,7 @@ export class UnitRepresentation {
         this.body.pivot.set(this.body.width/2, this.body.height/2)
         this.body.scale.set(TEXTURES.baseScale)
         this.body.tint = color
-        this.body.filters = [this.shapeFilter/* , new PIXI.FXAAFilter() */]
+        // this.body.filters = [this.shapeFilter/* , new PIXI.FXAAFilter() */]
 
         this.border = PIXI.Sprite.from(TEXTURES.textures.unit1Border)
         this.border.pivot.set(this.border.width/2, this.border.height/2)
@@ -49,7 +49,7 @@ export class UnitRepresentation {
     }
     
     setMoving(moving: boolean) {
-        this.shapeFilter.uniforms.spreadOut = !moving
+        // this.shapeFilter.uniforms.spreadOut = !moving
         this.root.zIndex = moving ? LAYERS.UNIT_MOVING : LAYERS.UNIT_STILL
     }
 }

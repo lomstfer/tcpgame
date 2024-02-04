@@ -21,7 +21,7 @@ export const gridFragShader = `
         vec2 b = worldPos / uGridSquareSize;
         
         float t = 0.0;
-        float lineSize = 0.06;
+        float lineSize = 2.0 / uGridSquareSize;
         float alpha = 0.5;
         
         float xx = abs(b.x - floor(0.5 + b.x));
