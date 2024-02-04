@@ -85,6 +85,10 @@ export class Match {
                 this.sendUnitsUpdate()
                 break
             }
+            case MSG.MessageId.clientGameStateRequest: {
+                this.sendGameStateResponse(clientId)
+                break
+            }
         }
     }
 
@@ -157,5 +161,24 @@ export class Match {
             return SCONSTS.INPUT_DELAY_MINIMUM_MS
         }
         return delay/* SCONSTS.INPUT_DELAY_MINIMUM_MS */
+    }
+
+    sendGameStateResponse(clientId: string) {
+        let units: Unit[] = Array.from(this.unitHandler.client1Units.values()).concat(Array.from(this.unitHandler.client2Units.values()))
+        let unitsToPlace: number = 0
+        let movesLeft: number = 0
+        let sock: WebSocket | undefined
+        if (clientId == this.client1Socket.id) {
+            unitsToPlace = this.unitHandler.client1UnitsRemaining
+            movesLeft = this.unitHandler.client1MovesRemaining
+            sock = this.client1Socket.socket
+        }
+        else if (clientId == this.client2Socket.id) {
+            unitsToPlace = this.unitHandler.client2UnitsRemaining
+            movesLeft = this.unitHandler.client2MovesRemaining
+            sock = this.client2Socket.socket
+        }
+        const obj = new MSGOBJS.ServerGameStateResponse(this.getMatchTime(), units, unitsToPlace, movesLeft)
+        sock?.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverGameStateResponse, obj))
     }
 }

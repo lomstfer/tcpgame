@@ -1,3 +1,4 @@
+export const BACKGROUND = 0xababab
 export const PLAYER_1 = 0x4290f5
 export const PLAYER_2 = 0xf57842
 export let SELF_COLOR: number = 0xffffff

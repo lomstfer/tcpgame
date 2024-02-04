@@ -105,3 +105,17 @@ export class ServerKillUnit {
         this.unitId = unitId
     }
 }
+
+export class ServerGameStateResponse {
+    timeOfSnapshot: number;
+    units: Unit[];
+    unitsToPlace: number;
+    movesLeft: number;
+
+    constructor(timeOfSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number) {
+        this.timeOfSnapshot = timeOfSnapshot;
+        this.units = units;
+        this.unitsToPlace = unitsToPlace;
+        this.movesLeft = movesLeft;
+    }
+}

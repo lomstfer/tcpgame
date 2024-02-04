@@ -54,13 +54,13 @@ export class UnitHandler {
 
     simulate() {
         for (const u of this.client1Units.values()) {
-            if (SIMULATION.moveUnit(u)[0]) {
+            if (SIMULATION.moveUnit(u, CONSTS.WORLD_UPDATE_S)[0]) {
                 this.onUnitArrived(this.client1Id, u.position, u)
             }
         }
 
         for (const u of this.client2Units.values()) {
-            if (SIMULATION.moveUnit(u)[0]) {
+            if (SIMULATION.moveUnit(u, CONSTS.WORLD_UPDATE_S)[0]) {
                 this.onUnitArrived(this.client2Id, u.position, u)
             }
         }

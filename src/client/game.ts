@@ -44,7 +44,7 @@ export class GameInstance {
     private selfUnitsToPlace: number = 0
     private selfMovesLeft: number = 0
 
-    constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData) {
+    constructor(appStage: PIXI.Container<PIXI.DisplayObject>, matchData: MatchData, matchTime: number) {
         if (matchData.team) {
             COLORS.setSelfColor(COLORS.PLAYER_1)
             COLORS.setOtherColor(COLORS.PLAYER_2)
@@ -54,7 +54,7 @@ export class GameInstance {
             COLORS.setOtherColor(COLORS.PLAYER_1)
         }
 
-        this.ui = new UI()
+        this.ui = new UI(matchTime)
         this.unitSelection = new UnitSelection()
 
         this.appStage = appStage
@@ -163,11 +163,11 @@ export class GameInstance {
     private moveUnits() {
         for (const u of this.selfUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
-            u.setMoving(SIMULATION.moveUnit(u.data)[1])
+            u.setMoving(SIMULATION.moveUnit(u.data, CONSTS.WORLD_UPDATE_S)[1])
         }
         for (const u of this.otherUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
-            u.setMoving(SIMULATION.moveUnit(u.data)[1])
+            u.setMoving(SIMULATION.moveUnit(u.data, CONSTS.WORLD_UPDATE_S)[1])
         }
     }
 
@@ -190,12 +190,12 @@ export class GameInstance {
     }
 
     handleServerUnitsUpdate(delayData: ExecuteDelayData, units: Unit[]) {
-        if (this.selfUnits.has(units[0].id)) {
-            this.selfMovesLeft -= 1
-        }
-
         console.log("exe:", delayData.timeUntilExecute)
         if (delayData.timeUntilExecute < 0) {
+            if (this.selfUnits.has(units[0].id)) {
+                this.selfMovesLeft -= 1
+            }
+
             for (const updatedUnit of units) {
                 if (updatedUnit.movingTo == undefined) {
                     console.log("updatedUnit.movingTo == undefined   (WHAT)")
@@ -205,7 +205,7 @@ export class GameInstance {
                 if (unit == undefined) {
                     continue
                 }
-
+                
                 const timeIntoMove = -delayData.timeUntilExecute
                 const totalDistance = Vec2.lengthOf(Vec2.sub(updatedUnit.position, updatedUnit.movingTo))
                 const distanceIntoMove = timeIntoMove * 0.001 * CONSTS.UNIT_SPEED
@@ -216,6 +216,9 @@ export class GameInstance {
         }
         else {
             setTimeout(() => {
+                if (this.selfUnits.has(units[0].id)) {
+                    this.selfMovesLeft -= 1
+                }
                 this.enforceServerUpdate(units, delayData.timeSinceSent + delayData.timeUntilExecute)
             }, delayData.timeUntilExecute)
         }
@@ -260,5 +263,24 @@ export class GameInstance {
         this.worldRoot.removeChild(unit.root)
         this.selfUnits.delete(id) || this.otherUnits.delete(id)
         this.oldUnitsPositions.delete(id)
+    }
+
+    handleServerGameStateResponse(timeSinceSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number) {
+        this.selfUnitsToPlace = unitsToPlace
+        this.selfMovesLeft = movesLeft
+        
+        const uiData = this.ui.handleTimeAway(timeSinceSnapshot, this.selfUnitsToPlace, this.selfMovesLeft)
+        this.selfUnitsToPlace = uiData[0]
+        this.selfMovesLeft = uiData[1]
+        console.log("HEJEJEJEJE")
+        for (const updatedUnit of units) {
+            const oldUnit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
+            if (oldUnit) {
+                console.log(updatedUnit.position)
+                oldUnit.data.position = updatedUnit.position
+                oldUnit.data.movingTo = updatedUnit.movingTo
+                oldUnit.setMoving(SIMULATION.moveUnit(oldUnit.data, timeSinceSnapshot/1000)[1])
+            }
+        }
     }
 }

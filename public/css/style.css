@@ -42,7 +42,7 @@ input, button {
     position: absolute;
     top: 0;
     right: 0;
-    width: 100px;
+    width: calc(var(--scale) * 10);
     /* left: calc(var(--scale) * 5); */
     /* bottom: calc(var(--scale) * 5); */
     font-size: calc(var(--scale) * 3);
@@ -114,10 +114,9 @@ input, button {
     width: fit-content;
     height: fit-content;
     left: calc(var(--scale) * 1);
+    top: calc(var(--scale) * 1);
 
-    transform: translateY(50%);
-
-    gap: calc(var(--scale) * 4);
+    gap: calc(var(--scale) * 2);
 }
 
 .next-load-i-parent {

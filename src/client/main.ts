@@ -5,17 +5,17 @@ import * as GUTILS from "./gameUtils.js"
 import * as GAME from "./game.js"
 import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
+import * as COLORS from "./colors.js"
 
 const websocket = new WebSocket("ws://192.168.0.121:80")
 NET.handleNetworking(websocket)
 
 // PIXI.settings.ROUND_PIXELS = false
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
-    background: '#55575c',
+    background: COLORS.BACKGROUND,
     width: CONSTS.GAME_WIDTH,
     height: CONSTS.GAME_HEIGHT,
     resizeTo: window,
-    antialias: true,
     backgroundAlpha: 1,
     eventMode: "static",
     autoStart: false,
@@ -28,6 +28,18 @@ document.addEventListener("contextmenu", (event) => {
     event.preventDefault()
 })
 
+// let visibilitychangeStart = performance.now()
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        console.log('Tab is not visible')
+        // visibilitychangeStart = performance.now()
+    } else {
+        console.log('Tab is visible')
+        NET.sendGameStateRequest(websocket)
+        // game?.handleVisibilityChange(performance.now() - visibilitychangeStart)
+    }
+})
+
 let name = "me"
 
 const gameUI = document.getElementById("game-ui")
@@ -35,11 +47,11 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    /* if (allow)
-        NET.findMatch(websocket, "player2") // for development speed */
-    if (findMatchForm) {
+    if (allow)
+        NET.findMatch(websocket, "player2") // for development speed
+    /* if (findMatchForm) {
         findMatchForm.style.display = allow ? "initial" : "none"
-    }
+    } */
 })
 
 const findMatchButton = document.getElementById("find-match-button")
@@ -74,7 +86,7 @@ function enterMatch(data: MatchData) {
     }
 
     pixiApp.start()
-    game = new GAME.GameInstance(pixiApp.stage, data)
+    game = new GAME.GameInstance(pixiApp.stage, data, NET.getMatchTimeMS())
     GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
 }
 
@@ -95,6 +107,8 @@ function enterMenu() {
 
 document.body.appendChild(pixiApp.view)
 
+// pixiApp.stage.filters = []
+
 const keyInput = new KeyInput()
 let accumulator = 0
 let game: GAME.GameInstance | undefined = undefined
@@ -102,11 +116,11 @@ pixiApp.ticker.add(() => {
     const dt = pixiApp.ticker.deltaMS / 1000
     
     if (timeEl) {
-        let milliseconds = NET.getMatchTimeMS()
+        let milliseconds = Math.floor(NET.getMatchTimeMS())
         let seconds = Math.floor(milliseconds / 1000)
         let minutes = Math.floor(seconds / 60)
-        seconds = seconds - minutes * 60
-        milliseconds = milliseconds - seconds * 1000 - minutes * 60
+        seconds = seconds % 60
+        milliseconds = milliseconds % 1000
         timeEl.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds/100)}`
     }
 
@@ -139,4 +153,7 @@ NET.netEventEmitter.on("serverUnitsUpdate", data => {
 })
 NET.netEventEmitter.on("killUnit", id => {
     game?.killUnit(id)
+})
+NET.netEventEmitter.on("serverGameStateRespone", data => {
+    game?.handleServerGameStateResponse(NET.getMatchTimeMS() - data.timeOfSnapshot, data.units, data.unitsToPlace, data.movesLeft)
 })

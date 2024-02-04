@@ -30,7 +30,7 @@ export class UnitRepresentation {
         this.body.pivot.set(this.body.width/2, this.body.height/2)
         this.body.scale.set(TEXTURES.baseScale)
         this.body.tint = color
-        this.body.filters = [this.shapeFilter]
+        this.body.filters = [this.shapeFilter/* , new PIXI.FXAAFilter() */]
 
         this.border = PIXI.Sprite.from(TEXTURES.textures.unit1Border)
         this.border.pivot.set(this.border.width/2, this.border.height/2)

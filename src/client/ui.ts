@@ -8,13 +8,13 @@ export class UI {
     private nextMoveFill: HTMLElement | null = null
     private movesLeft: HTMLElement | null = null
 
-    private selfNewUnitTime: number = 0
-    private selfNewMoveTime: number = 0
+    private newUnitTime: number
+    private newMoveTime: number
 
-    private nextUnitsFillWidth: number = 0
-    private nextMovesFillWidth: number = 0
+    constructor(matchTime: number) {
+        this.newUnitTime = matchTime
+        this.newMoveTime = matchTime
 
-    constructor() {
         {
             const nextUnitLoad = document.getElementById("next-unit-load-bar-parent")
             if (nextUnitLoad) {
@@ -37,26 +37,23 @@ export class UI {
 
     update(deltaTime: number, time: number, unitsLeft: number, movesLeft: number): [number, number] {
         if (this.nextUnitFill) {
-            this.selfNewUnitTime += deltaTime
-            if (this.selfNewUnitTime >= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS) {
+            this.newUnitTime += deltaTime
+            if (this.newUnitTime >= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS) {
                 unitsLeft += 1
-                this.selfNewUnitTime = 0
+                this.newUnitTime -= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
             }
-
-            let itime = Math.round(time) % CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS / CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
-            this.nextUnitsFillWidth = itime * 100
-            this.nextUnitFill.style.width = (itime * 100).toString() + "%"
+            const fraction = this.newUnitTime / CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS * 100
+            this.nextUnitFill.style.width = (fraction).toString() + "%"
         }
-        if (this.nextMoveFill) {
-            this.selfNewMoveTime += deltaTime
-            if (this.selfNewMoveTime >= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS) {
-                movesLeft += 1
-                this.selfNewMoveTime = 0
-            }
 
-            let itime = Math.round(time) % CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS / CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
-            this.nextMovesFillWidth = itime * 100
-            this.nextMoveFill.style.width = (itime * 100).toString() + "%"
+        if (this.nextMoveFill) {
+            this.newMoveTime += deltaTime
+            if (this.newMoveTime >= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS) {
+                movesLeft += 1
+                this.newMoveTime -= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
+            }
+            const fraction = this.newMoveTime / CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS * 100
+            this.nextMoveFill.style.width = (fraction).toString() + "%"
         }
 
         if (this.unitsToPlace) {
@@ -66,6 +63,18 @@ export class UI {
             this.movesLeft.textContent = movesLeft.toString()
         }
 
+        return [unitsLeft, movesLeft]
+    }
+
+    handleTimeAway(timeAwayMS: number, unitsLeft: number, movesLeft: number): [number, number] {
+        const unitsToAdd = Math.floor(timeAwayMS / CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS)
+        unitsLeft += unitsToAdd
+        this.newUnitTime += timeAwayMS - unitsToAdd * CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
+        
+        const movesToAdd = Math.floor(timeAwayMS / CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS)
+        movesLeft += movesToAdd
+        this.newMoveTime += timeAwayMS - movesToAdd * CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
+        
         return [unitsLeft, movesLeft]
     }
 }

@@ -96,6 +96,7 @@ uniform mat3 projectionMatrix;
 
 varying vec2 vTextureCoord;
 
+
 uniform float uTime;
 
 void main(void) {
@@ -121,15 +122,21 @@ uniform vec4 outputFrame;
 
 uniform bool spreadOut;
 
+float remap(float value, float from1, float to1, float from2,  float to2) {
+    return (value - from1) / (to1 - from1) * (to2 - from2) + from2;
+}
+
 void main(void) {
     vec4 color = texture2D(uSampler, vTextureCoord);
+    vec4 c = texture2D(uSampler, vec2(0.5, 0.5));
     
-    vec2 pos = (vTextureCoord);
+    vec2 pos = vTextureCoord * inputSize.xy / outputFrame.zw - vec2(0.5);
 
     if (spreadOut) {
-        color.r *= 0.8;
-        color.g *= 0.8;
-        color.b *= 0.8;
+        color = c;
+    }
+    else 
+    {
     }
     
     gl_FragColor = color;

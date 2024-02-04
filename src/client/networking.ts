@@ -17,11 +17,12 @@ type netEvents = {
     spawnServerUnitSelf: [ExecuteDelayData, Unit]
     spawnServerUnitOther: [ExecuteDelayData, Unit],
     serverUnitsUpdate: [ExecuteDelayData, Unit[]],
-    killUnit: string
+    killUnit: string,
+    serverGameStateRespone: MSGOBJS.ServerGameStateResponse
 }
 
-export const TIME_SYNC_WAIT = 20
-export const TIME_SYNCS_TO_DO = 2
+export const TIME_SYNC_WAIT = 200
+export const TIME_SYNCS_TO_DO = 10
 
 export const netEventEmitter = mitt<netEvents>()
 
@@ -103,6 +104,11 @@ export function handleNetworking(ws: WebSocket) {
                 netEventEmitter.emit("killUnit", msgObj.unitId)
                 break
             }
+            case MSG.MessageId.serverGameStateResponse: {
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerGameStateResponse>(bytes)
+                netEventEmitter.emit("serverGameStateRespone", msgObj)
+                break
+            }
         }
     }
 }
@@ -142,4 +148,8 @@ export function sendMoveUnits(ws: WebSocket, data: [Set<Unit>, Vec2]) {
     const obj = new MSGOBJS.ClientMoveUnits(ids, data[1])
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.clientMatchMoveUnits, obj)
     ws.send(bytes)
+}
+
+export function sendGameStateRequest(ws: WebSocket) {
+    ws.send(MSG.getByteFromMessage(MSG.MessageId.clientGameStateRequest))
 }
