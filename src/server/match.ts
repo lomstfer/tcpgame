@@ -3,15 +3,10 @@ import { ClientInfo } from "../shared/clientInfo.js"
 import { Vec2 } from '../shared/utils.js'
 import * as MSG from "../shared/messageStuff.js"
 import * as MSGOBJS from "../shared/messageObjects.js"
-import * as SUTILS from "./serverUtils.js"
-import * as UTILS from "../shared/utils.js"
 import { Unit } from "../shared/unit.js"
 import * as CONSTS from "../shared/constants.js"
-import * as SIMULATION from "../shared/simulation.js"
-import lodash, { round } from "lodash"
 import * as SCONSTS from "./serverConstants.js"
 import { SocketData } from './socketData.js'
-import NanoTimer from 'nanotimer'
 import { UnitHandler } from './unitHandler.js'
 
 export class WebSocketWithId {
@@ -34,6 +29,8 @@ export class Match {
     dateTimeStarted: number
 
     unitHandler: UnitHandler
+
+    matchEnded = false
 
     constructor(id: string, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
@@ -59,24 +56,39 @@ export class Match {
         this.unitHandler.unitsEventEmitter.on("sendDeleteUnit", (id) => {
             this.sendDeleteUnit(id)
         })
-        this.unitHandler.unitsEventEmitter.on("sendSpawnUnit", (bytes) => {
-            this.client1Socket.socket.send(bytes[0])
-            this.client2Socket.socket.send(bytes[1])
+        this.unitHandler.unitsEventEmitter.on("clientNoUnitsAlive", (id) => {
+            if (id == this.client1Socket.id) {
+                this.endMatchWithWinner(this.client2Socket.id)
+            }
+            else if (id == this.client2Socket.id) {
+                this.endMatchWithWinner(this.client1Socket.id)
+            }
         })
     }
 
     handleMessage(bytes: Uint8Array, messageId: MSG.MessageId, clientId: string) {
         switch (messageId) {
             case MSG.MessageId.clientMatchSpawnUnit: {
+                if (this.matchEnded) {
+                    break
+                }
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientSpawnUnitRequest>(bytes)
                 if (msgObj == undefined) {
                     break
                 }
-                
-                this.unitHandler.trySpawnUnit(clientId, msgObj.position, this.getMatchTime(), this.getInputDelay())
+
+                const spawned = this.unitHandler.trySpawnUnit(clientId, msgObj.position, this.getMatchTime(), this.getInputDelay())
+                if (spawned != undefined) {
+                    this.client1Socket.socket.send(spawned[0])
+                    this.client2Socket.socket.send(spawned[1])
+                }
+
                 break
             }
             case MSG.MessageId.clientMatchMoveUnits: {
+                if (this.matchEnded) {
+                    break
+                }
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientMoveUnits>(bytes)
                 if (msgObj == undefined) {
                     break
@@ -92,23 +104,32 @@ export class Match {
         }
     }
 
+    spawnStartUnits(client1Team: boolean): [Unit[], Unit[]] {
+        const units1: Unit[] = []
+        const units2: Unit[] = []
+        const left = new Vec2(-CONSTS.START_DISTANCE, 0)
+        const right = new Vec2(CONSTS.START_DISTANCE, 0)
+        {
+            const unit = this.unitHandler.spawnUnitForFree(this.client1Socket.id, client1Team ? left : right)
+            if (unit) {
+                units1.push(unit)
+            }
+        }
+        {
+            const unit = this.unitHandler.spawnUnitForFree(this.client2Socket.id, client1Team ? right : left)
+            if (unit) {
+                units2.push(unit)
+            }
+        }
+        return [units1, units2]
+    }
+
     getMatchTime(): number {
         return Date.now() - this.dateTimeStarted
     }
 
     simulate(deltaTime: number) {
         this.unitHandler.simulate()
-    }
-
-    disconnectClient(id: string) {
-        if (id == this.client1Socket.id) {
-            console.log(this.client1Info.name, "disconnected")
-            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
-        }
-        else if (id == this.client2Socket.id) {
-            console.log(this.client2Info.name, "disconnected")
-            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
-        }
     }
 
     sendBytesToAll(bytes: Uint8Array) {
@@ -167,18 +188,42 @@ export class Match {
         let units: Unit[] = Array.from(this.unitHandler.client1Units.values()).concat(Array.from(this.unitHandler.client2Units.values()))
         let unitsToPlace: number = 0
         let movesLeft: number = 0
-        let sock: WebSocket | undefined
+        let socket: WebSocket | undefined
         if (clientId == this.client1Socket.id) {
             unitsToPlace = this.unitHandler.client1UnitsRemaining
             movesLeft = this.unitHandler.client1MovesRemaining
-            sock = this.client1Socket.socket
+            socket = this.client1Socket.socket
         }
         else if (clientId == this.client2Socket.id) {
             unitsToPlace = this.unitHandler.client2UnitsRemaining
             movesLeft = this.unitHandler.client2MovesRemaining
-            sock = this.client2Socket.socket
+            socket = this.client2Socket.socket
         }
         const obj = new MSGOBJS.ServerGameStateResponse(this.getMatchTime(), units, unitsToPlace, movesLeft)
-        sock?.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverGameStateResponse, obj))
+        socket?.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverGameStateResponse, obj))
+    }
+
+    endMatchWithWinner(winnerId: string) {
+        this.matchEnded = true
+        
+        if (winnerId == this.client1Socket.id) {
+            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverYouWon))
+            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverYouLost))
+        }
+        else if (winnerId == this.client2Socket.id) {
+            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverYouWon))
+            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverYouLost))
+        }
+    }
+
+    disconnectClient(id: string) {
+        if (id == this.client1Socket.id) {
+            console.log(this.client1Info.name, "disconnected")
+            this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
+        }
+        else if (id == this.client2Socket.id) {
+            console.log(this.client2Info.name, "disconnected")
+            this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
+        }
     }
 }

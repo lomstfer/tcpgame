@@ -15,9 +15,9 @@ export class UnitRepresentation {
 
     color: number
 
-    shapeFilter = new PIXI.Filter(undefined, shapeFragShader, {
+    /* shapeFilter = new PIXI.Filter(undefined, shapeFragShader, {
         spreadOut: false
-    })
+    }) */
     
     constructor(data: Unit, color: number) {
         this.data = data
@@ -42,6 +42,8 @@ export class UnitRepresentation {
         this.root.addChild(this.border)
 
         this.root.zIndex = 1
+
+        this.flipSprite(Math.random() - 0.5)
     }
     
     setSelected(selected: boolean) {
@@ -51,5 +53,9 @@ export class UnitRepresentation {
     setMoving(moving: boolean) {
         // this.shapeFilter.uniforms.spreadOut = !moving
         this.root.zIndex = moving ? LAYERS.UNIT_MOVING : LAYERS.UNIT_STILL
+    }
+
+    flipSprite(flipTowards: number) {
+        this.root.scale.x = flipTowards > 0 ? Math.abs(this.root.scale.x) : flipTowards < 0 ? -Math.abs(this.root.scale.x) : this.root.scale.x
     }
 }

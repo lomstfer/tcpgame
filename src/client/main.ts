@@ -47,16 +47,17 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    if (allow)
-        NET.findMatch(websocket, "player2") // for development speed
-    /* if (findMatchForm) {
+    /* if (allow)
+        NET.findMatch(websocket, "player2") // for development speed */
+        console.log("eeee")
+    if (findMatchForm) {
         findMatchForm.style.display = allow ? "initial" : "none"
-    } */
+    }
 })
 
 const findMatchButton = document.getElementById("find-match-button")
 findMatchButton?.addEventListener("click", () => {
-    const nameInput = document.getElementById("find-match-name") as HTMLInputElement
+    const nameInput = document.getElementById("find-match-name") as HTMLInputElement | null
     if (!nameInput) {
         return
     }
@@ -65,12 +66,32 @@ findMatchButton?.addEventListener("click", () => {
 })
 
 const versusText = document.getElementById("versus-text")
-const timeEl = document.getElementById("time")
+const matchTime = document.getElementById("time")
 NET.netEventEmitter.on("foundMatch", data => {
     enterMatch(data)
 })
 
 NET.netEventEmitter.on("matchWon", () => {
+    endMatch(true)
+})
+NET.netEventEmitter.on("matchLost", () => {
+    endMatch(false)
+})
+
+const matchEndedScreen = document.getElementById("match-ended-screen")
+const matchEndedScreenResult = document.getElementById("match-ended-screen-result")
+function endMatch(won: boolean) {
+    
+    if (matchEndedScreen) {
+        if (matchEndedScreenResult) {
+            matchEndedScreenResult.textContent = won ? "WINNER" : "LOOSER"
+        }
+        
+        matchEndedScreen.style.display = "flex"
+    }
+}
+const matchEndedScreenGotoMenu = document.getElementById("match-ended-screen-gotomenu")
+matchEndedScreenGotoMenu?.addEventListener("click", () => {
     enterMenu()
 })
 
@@ -79,7 +100,12 @@ function enterMatch(data: MatchData) {
         gameUI.style.display = "initial"
     }
     if (versusText) {
-        versusText.textContent = name + " VS " + data.otherClient.name
+        if (data.team) {
+            versusText.textContent = name + " VS " + data.otherClient.name
+        }
+        else {
+            versusText.textContent = data.otherClient.name + " VS " + name
+        }
     }
     if (background) {
         background.style.display = "none"
@@ -100,6 +126,13 @@ function enterMenu() {
     if (background) {
         background.style.display = "initial"
     }
+    if (matchEndedScreen) {
+        if (matchEndedScreenResult) {
+            matchEndedScreenResult.textContent = ""
+        }
+        
+        matchEndedScreen.style.display = "none"
+    }
 
     game?.stop()
     pixiApp.stop()
@@ -115,13 +148,13 @@ let game: GAME.GameInstance | undefined = undefined
 pixiApp.ticker.add(() => {
     const dt = pixiApp.ticker.deltaMS / 1000
     
-    if (timeEl) {
+    if (matchTime) {
         let milliseconds = Math.floor(NET.getMatchTimeMS())
         let seconds = Math.floor(milliseconds / 1000)
         let minutes = Math.floor(seconds / 60)
         seconds = seconds % 60
         milliseconds = milliseconds % 1000
-        timeEl.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds/100)}`
+        matchTime.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds/100)}`
     }
 
     game?.update(dt*1000, NET.getMatchTimeMS(), keyInput)

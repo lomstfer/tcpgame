@@ -63,4 +63,9 @@ export class Camera {
         this.worldPosition.y = UTILS.Lerp(this.worldPosition.y, this.targetPosition.y, 1 - Math.exp(-this.stiffness * deltaTime))
         // this.worldPosition = Vec2.round(this.interpPosition)
     }
+
+    setPosition(position: Vec2) {
+        this.targetPosition = new Vec2(position.x, position.y)
+        this.worldPosition = new Vec2(position.x, position.y)
+    }
 }

@@ -12,8 +12,8 @@ import lodash from "lodash"
 import * as SUTILS from "./serverUtils.js"
 
 type unitsEvents = {
-    sendDeleteUnit: string /*unitId*/,
-    sendSpawnUnit: [Uint8Array, Uint8Array] /*client1, client2*/
+    sendDeleteUnit: string /* unitId */,
+    clientNoUnitsAlive: string /* clientId  */,
 }
 
 export class UnitHandler {
@@ -41,15 +41,15 @@ export class UnitHandler {
         this.client1Id = client1Id
         this.client2Id = client2Id
 
-        ;(new NanoTimer()).setInterval(() => {
-            this.client1UnitsRemaining += 1
-            this.client2UnitsRemaining += 1
-        }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
+            ; (new NanoTimer()).setInterval(() => {
+                this.client1UnitsRemaining += 1
+                this.client2UnitsRemaining += 1
+            }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
 
-        ;(new NanoTimer()).setInterval(() => {
-            this.client1MovesRemaining += 1
-            this.client2MovesRemaining += 1
-        }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
+            ; (new NanoTimer()).setInterval(() => {
+                this.client1MovesRemaining += 1
+                this.client2MovesRemaining += 1
+            }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
     }
 
     simulate() {
@@ -77,6 +77,9 @@ export class UnitHandler {
                     this.units2GridPositionsToData.delete(p)
                     this.client2Units.delete(deletedUnit.id)
                     this.unitsEventEmitter.emit("sendDeleteUnit", deletedUnit.id)
+                    if (this.client2Units.size <= 0) {
+                        this.unitsEventEmitter.emit("clientNoUnitsAlive", this.client2Id)
+                    }
                 }
             }
             else {
@@ -87,27 +90,53 @@ export class UnitHandler {
                     this.units1GridPositionsToData.delete(p)
                     this.client1Units.delete(deletedUnit.id)
                     this.unitsEventEmitter.emit("sendDeleteUnit", deletedUnit.id)
+                    if (this.client1Units.size <= 0) {
+                        this.unitsEventEmitter.emit("clientNoUnitsAlive", this.client1Id)
+                    }
                 }
             }
         }
         this.unitsGridPositionToOwner.set(p, ownerOfArrivingId)
     }
 
-    trySpawnUnit(ownerId: string, position: Vec2, timeNow: number, delay: number) {
+    trySpawnUnit(ownerId: string, position: Vec2, timeNow: number, delay: number): [Uint8Array, Uint8Array] | undefined {
         if ((ownerId == this.client1Id && this.client1UnitsRemaining == 0) ||
             (ownerId == this.client2Id && this.client2UnitsRemaining == 0)) {
-            return
+            return undefined
         }
 
+        const unit = this.spawnUnitForFree(ownerId, position)
+        if (unit == undefined) {
+            return undefined
+        }
+
+        const selfBytes = MSG.getBytesFromMessageAndObj(
+            MSG.MessageId.serverSpawnUnitSelf,
+            new MSGOBJS.ServerSpawnUnitSelf(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
+        )
+        const otherBytes = MSG.getBytesFromMessageAndObj(
+            MSG.MessageId.serverSpawnUnitOther,
+            new MSGOBJS.ServerSpawnUnitOther(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
+        )
+
+        if (ownerId == this.client1Id) {
+            this.client1UnitsRemaining -= 1
+            return [selfBytes, otherBytes]
+        }
+        else if (ownerId == this.client2Id) {
+            this.client2UnitsRemaining -= 1
+            return [otherBytes, selfBytes]
+        }
+
+        return undefined
+    }
+
+    spawnUnitForFree(ownerId: string, position: Vec2): Unit | undefined {
         const gridPos = UTILS.roundWorldPositionToGrid(position)
         const gridPosString = JSON.stringify(gridPos)
         const occupyingUnit = this.units1GridPositionsToData.get(gridPosString) || this.units2GridPositionsToData.get(gridPosString)
         if (occupyingUnit != undefined) {
-            return
-            /* const diff = Vec2.sub(position, occupyingUnit.position)
-            if (Vec2.squareLengthOf(diff) == 0) {
-                unit.position = Vec2.sub(occupyingUnit.position, Vec2.randomDirection(CONSTS.UNIT_SIZE))
-            } */
+            return undefined
         }
         const gridPositions = ownerId == this.client1Id ? this.units1GridPositionsToData : this.units2GridPositionsToData
 
@@ -115,25 +144,14 @@ export class UnitHandler {
         gridPositions.set(gridPosString, unit)
         this.unitsGridPositionToOwner.set(JSON.stringify(gridPos), ownerId)
 
-        const selfBytes = MSG.getBytesFromMessageAndObj(
-            MSG.MessageId.serverSpawnUnitSelf, 
-            new MSGOBJS.ServerSpawnUnitSelf(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
-        )
-        const otherBytes = MSG.getBytesFromMessageAndObj(
-            MSG.MessageId.serverSpawnUnitOther, 
-            new MSGOBJS.ServerSpawnUnitOther(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
-        )
-
         if (ownerId == this.client1Id) {
-            this.client1UnitsRemaining -= 1
             this.client1Units.set(unit.id, unit)
-            this.unitsEventEmitter.emit("sendSpawnUnit", [selfBytes, otherBytes])
         }
         else if (ownerId == this.client2Id) {
-            this.client2UnitsRemaining -= 1
             this.client2Units.set(unit.id, unit)
-            this.unitsEventEmitter.emit("sendSpawnUnit", [otherBytes, selfBytes])
         }
+
+        return unit
     }
 
     tryMoveUnits(ownerId: string, unitIds: string[], here: Vec2, inputDelay: number) {

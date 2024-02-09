@@ -19,7 +19,9 @@ export enum MessageId {
     serverUnitsUpdate,
     serverKillUnit,
     clientGameStateRequest,
-    serverGameStateResponse
+    serverGameStateResponse,
+    serverYouWon,
+    serverYouLost,
 }
 
 export function getByteFromMessage(messageID: MessageId): Uint8Array {

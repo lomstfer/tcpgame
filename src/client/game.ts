@@ -48,17 +48,20 @@ export class GameInstance {
         if (matchData.team) {
             COLORS.setSelfColor(COLORS.PLAYER_1)
             COLORS.setOtherColor(COLORS.PLAYER_2)
+            this.camera.setPosition(new Vec2(-CONSTS.START_DISTANCE, 0))
         }
         else {
             COLORS.setSelfColor(COLORS.PLAYER_2)
             COLORS.setOtherColor(COLORS.PLAYER_1)
+            this.camera.setPosition(new Vec2(CONSTS.START_DISTANCE, 0))
         }
 
+        
         this.ui = new UI(matchTime)
         this.unitSelection = new UnitSelection()
-
+        
         this.appStage = appStage
-
+        
         this.worldRoot = new PIXI.Container()
         {
             this.worldRoot.x = CONSTS.GAME_WIDTH / 2
@@ -66,15 +69,24 @@ export class GameInstance {
             this.worldRoot.sortableChildren = true
             this.appStage.addChild(this.worldRoot)
         }
-
+        
         const origo = new PIXI.Graphics()
         origo.beginFill(0x000000)
         origo.drawCircle(0, 0, 5)
         origo.endFill()
         this.worldRoot.addChild(origo)
-
+        
         this.worldRoot.addChild(this.grid.sprite)
         this.worldRoot.addChild(this.unitSelection.sprite)
+        
+        for (const u of matchData.startSelfUnits) {
+            console.log(u)
+            this.spawnUnitSelfNoDelay(u)
+        }
+        for (const u of matchData.startOtherUnits) {
+            console.log("2", u)
+            this.spawnUnitOtherNoDelay(u)
+        }
 
         this.appStage.addEventListener("mousedown", e => {
             this.mouseDown = true
@@ -95,18 +107,18 @@ export class GameInstance {
             this.mouseWorldPosition = undefined
             this.mouseDown = false
         })
-
+        
         /* {
-        const inventorySlots = document.getElementById("inventory-slots")
-        for (let i = 0; i < CONSTS.INVENTORY_SIZE; i++) {
-            const slot = document.createElement("div")
-            slot.classList.add("item-slot")
-            slot.id = "item-slot-" + i.toString()
-            inventorySlots?.appendChild(slot)
-        }
+            const inventorySlots = document.getElementById("inventory-slots")
+            for (let i = 0; i < CONSTS.INVENTORY_SIZE; i++) {
+                const slot = document.createElement("div")
+                slot.classList.add("item-slot")
+                slot.id = "item-slot-" + i.toString()
+                inventorySlots?.appendChild(slot)
+            }
         } */
     }
-
+    
     stop() {
         if (this.worldRoot != undefined) {
             this.appStage.removeChild(this.worldRoot)
@@ -156,7 +168,7 @@ export class GameInstance {
             }
             unit.root.position.x = UTILS.Lerp(pos.x, unit.data.position.x, alpha)
             unit.root.position.y = UTILS.Lerp(pos.y, unit.data.position.y, alpha)
-            unit.root.scale.x = unit.data.position.x - pos.x > 0 ? Math.abs(unit.root.scale.x) : unit.data.position.x - pos.x < 0 ? -Math.abs(unit.root.scale.x) : unit.root.scale.x
+            unit.flipSprite(unit.data.position.x - pos.x)
         }
     }
 
@@ -171,26 +183,32 @@ export class GameInstance {
         }
     }
 
+    spawnUnitSelfNoDelay(unit: Unit) {
+        const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
+        this.worldRoot.addChild(unitR.root)
+        this.selfUnits.set(unitR.data.id, unitR)
+    }
+
     spawnUnitSelf(delayData: ExecuteDelayData, unit: Unit) {
         setTimeout(() => {
-            const unitR = new UnitRepresentation(unit, COLORS.SELF_COLOR)
-            this.worldRoot.addChild(unitR.root)
-            this.selfUnits.set(unitR.data.id, unitR)
-
+            this.spawnUnitSelfNoDelay(unit)
             this.selfUnitsToPlace -= 1
         }, delayData.timeUntilExecute)
     }
 
+    spawnUnitOtherNoDelay(unit: Unit) {
+        const unitR = new UnitRepresentation(unit, COLORS.OTHER_COLOR)
+        this.worldRoot.addChild(unitR.root)
+        this.otherUnits.set(unitR.data.id, unitR)
+    }
+
     spawnUnitOther(delayData: ExecuteDelayData, unit: Unit) {
         setTimeout(() => {
-            const unitR = new UnitRepresentation(unit, COLORS.OTHER_COLOR)
-            this.worldRoot.addChild(unitR.root)
-            this.otherUnits.set(unitR.data.id, unitR)
+            this.spawnUnitOtherNoDelay(unit)
         }, delayData.timeUntilExecute)
     }
 
     handleServerUnitsUpdate(delayData: ExecuteDelayData, units: Unit[]) {
-        console.log("exe:", delayData.timeUntilExecute)
         if (delayData.timeUntilExecute < 0) {
             if (this.selfUnits.has(units[0].id)) {
                 this.selfMovesLeft -= 1
@@ -205,7 +223,7 @@ export class GameInstance {
                 if (unit == undefined) {
                     continue
                 }
-                
+
                 const timeIntoMove = -delayData.timeUntilExecute
                 const totalDistance = Vec2.lengthOf(Vec2.sub(updatedUnit.position, updatedUnit.movingTo))
                 const distanceIntoMove = timeIntoMove * 0.001 * CONSTS.UNIT_SPEED
@@ -268,7 +286,7 @@ export class GameInstance {
     handleServerGameStateResponse(timeSinceSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number) {
         this.selfUnitsToPlace = unitsToPlace
         this.selfMovesLeft = movesLeft
-        
+
         const uiData = this.ui.handleTimeAway(timeSinceSnapshot, this.selfUnitsToPlace, this.selfMovesLeft)
         this.selfUnitsToPlace = uiData[0]
         this.selfMovesLeft = uiData[1]
@@ -277,7 +295,7 @@ export class GameInstance {
             if (oldUnit) {
                 oldUnit.data.position = updatedUnit.position
                 oldUnit.data.movingTo = updatedUnit.movingTo
-                oldUnit.setMoving(SIMULATION.moveUnit(oldUnit.data, timeSinceSnapshot/1000)[1])
+                oldUnit.setMoving(SIMULATION.moveUnit(oldUnit.data, timeSinceSnapshot / 1000)[1])
             }
         }
     }

@@ -14,6 +14,7 @@ type netEvents = {
     allowFindMatch: boolean,
     foundMatch: MatchData,
     matchWon: undefined,
+    matchLost: undefined,
     spawnServerUnitSelf: [ExecuteDelayData, Unit]
     spawnServerUnitOther: [ExecuteDelayData, Unit],
     serverUnitsUpdate: [ExecuteDelayData, Unit[]],
@@ -22,7 +23,7 @@ type netEvents = {
 }
 
 export const TIME_SYNC_WAIT = 200
-export const TIME_SYNCS_TO_DO = 10
+export const TIME_SYNCS_TO_DO = 20
 
 export const netEventEmitter = mitt<netEvents>()
 
@@ -107,6 +108,14 @@ export function handleNetworking(ws: WebSocket) {
             case MSG.MessageId.serverGameStateResponse: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerGameStateResponse>(bytes)
                 netEventEmitter.emit("serverGameStateRespone", msgObj)
+                break
+            }
+            case MSG.MessageId.serverYouWon: {
+                netEventEmitter.emit("matchWon")
+                break
+            }
+            case MSG.MessageId.serverYouLost: {
+                netEventEmitter.emit("matchLost")
                 break
             }
         }

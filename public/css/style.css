@@ -30,7 +30,6 @@ canvas {
 }
 
 input, button {
-    user-select: all;
     pointer-events: all;
 }
 
@@ -55,10 +54,9 @@ input, button {
 
 #find-match-inputs {
     position: absolute;
-    top: calc(var(--scale) * 5);
-    left: calc(var(--scale) * 5);
-    width: calc(var(--scale) * 10);
-    height: calc(var(--scale) * 5);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     display: none;
 }
 
@@ -69,7 +67,7 @@ input, button {
     font-size: calc(var(--scale) * 4);
 }
 
-#inventory-parent {
+/* #inventory-parent {
     overflow: hidden;
     position: absolute;
     bottom: 0;
@@ -103,7 +101,7 @@ input, button {
     border-radius: calc(var(--scale) * 1);
     background-color: rgba(29, 29, 29, 0.836);
     pointer-events: all;
-}
+} */
 
 #next-load-parent {
     font-size: calc(var(--scale) * 2);
@@ -154,4 +152,19 @@ input, button {
     right: 0;
     /* transform: translate(-50%); */
     /* height: fit-content; */
+}
+
+#match-ended-screen {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.445);
+    justify-content: center;
+    align-items: center;
+}
+
+#match-ended-screen-result {
+    font-size: calc(var(--scale) * 8);
+    color: white;
 }

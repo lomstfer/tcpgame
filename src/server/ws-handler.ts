@@ -145,9 +145,12 @@ function matchmakeIteration(
     let newMatches = consumeClientsFromMatchFinder(clientsInMatchFinder, sockets)
 
     for (let m of newMatches) {
-        const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, getElapsedTime(), false))
+        const client1Team = Math.random() < 0.5
+        const startUnits = m.spawnStartUnits(client1Team)
+
+        const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, getElapsedTime(), client1Team, startUnits[0], startUnits[1]))
         m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverFoundMatch, objTo1))
-        const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, getElapsedTime(), true))
+        const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, getElapsedTime(), !client1Team, startUnits[1], startUnits[0]))
         m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverFoundMatch, objTo2))
 
         ongoingMatches.set(m.id, m)
