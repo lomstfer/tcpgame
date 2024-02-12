@@ -32,6 +32,8 @@ export class Match {
 
     matchEnded = false
 
+    rematchState: number = 0 // 2 == rematch
+
     constructor(id: string, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
         this.dateTimeStarted = Date.now()
@@ -129,6 +131,9 @@ export class Match {
     }
 
     simulate(deltaTime: number) {
+        if (this.matchEnded) {
+            return
+        }
         this.unitHandler.simulate()
     }
 
@@ -220,10 +225,14 @@ export class Match {
         if (id == this.client1Socket.id) {
             console.log(this.client1Info.name, "disconnected")
             this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
+            if (this.matchEnded == false)
+                this.endMatchWithWinner(this.client2Socket.id)
         }
         else if (id == this.client2Socket.id) {
             console.log(this.client2Info.name, "disconnected")
             this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
+            if (this.matchEnded == false)
+                this.endMatchWithWinner(this.client1Socket.id)
         }
     }
 }

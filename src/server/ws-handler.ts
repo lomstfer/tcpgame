@@ -63,6 +63,30 @@ export function handleWS(server: Server) {
                     addClientToMatchFinder(clientId, msgObj.info, clientsInMatchFinder)
                     break
                 }
+                case MSG.MessageId.clientRematch: {
+                    console.log(clientId, "rematch!")
+                    const match = clientIdsToMatches.get(clientId)
+                    if (match) {
+                        match.rematchState += 1
+                        if (match.rematchState >= 2) {
+                            rematch(match, ongoingMatches, clientIdsToMatches)
+                        }
+                    }
+                    else {
+                        console.log("match already closed")
+                    }
+                    break
+                }
+                case MSG.MessageId.clientLeftMatch: {
+                    const match = clientIdsToMatches.get(clientId)
+                    if (match) {
+                        match.disconnectClient(clientId)
+                        ongoingMatches.delete(match.id)
+                        clientIdsToMatches.delete(match.client1Socket.id)
+                        clientIdsToMatches.delete(match.client2Socket.id)
+                    }
+                    break
+                }
             }
         })
 
@@ -127,6 +151,9 @@ function addClientToMatchFinder(
     if (clientsInMatchFinder.has(clientId)) {
         return
     }
+    if (clientInfo.name.length == 0) {
+        clientInfo.name = CONSTS.DEFAULT_NAME
+    }
     clientsInMatchFinder.set(clientId, clientInfo)
 }
 
@@ -136,26 +163,19 @@ function matchmakeIteration(
     ongoingMatches: Map<string, Match>,
     clientIdsToMatches: Map<string, Match>
 ) {
-    /* log() */
+    // log()
     if (clientsInMatchFinder.size < 2) {
-        /* log() */
         return
     }
 
     let newMatches = consumeClientsFromMatchFinder(clientsInMatchFinder, sockets)
 
     for (let m of newMatches) {
-        const client1Team = Math.random() < 0.5
-        const startUnits = m.spawnStartUnits(client1Team)
-
-        const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client2Info, getElapsedTime(), client1Team, startUnits[0], startUnits[1]))
-        m.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverFoundMatch, objTo1))
-        const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(m.client1Info, getElapsedTime(), !client1Team, startUnits[1], startUnits[0]))
-        m.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverFoundMatch, objTo2))
-
         ongoingMatches.set(m.id, m)
         clientIdsToMatches.set(m.client1Socket.id, m)
         clientIdsToMatches.set(m.client2Socket.id, m)
+
+        startAndSendMatch(m)
     }
 
     function log() {
@@ -217,4 +237,41 @@ function worldIteration(
     for (const [id, match] of matches) {
         match.simulate(CONSTS.WORLD_UPDATE_S)
     }
+}
+
+function rematch(
+    oldMatch: Match,
+    ongoingMatches: Map<string, Match>,
+    clientIdsToMatches: Map<string, Match>
+) {
+    let client1: [SocketData, ClientInfo]
+    let client2: [SocketData, ClientInfo]
+    const randomSwitch = Math.random() < 0.5
+    if (randomSwitch) {
+        client1 = [oldMatch.client2Socket, oldMatch.client2Info]
+        client2 = [oldMatch.client1Socket, oldMatch.client1Info]
+    }
+    else {
+        client1 = [oldMatch.client1Socket, oldMatch.client1Info]
+        client2 = [oldMatch.client2Socket, oldMatch.client2Info]
+    }
+
+    ongoingMatches.delete(oldMatch.id)
+
+    const newMatch = new Match(SUTILS.generateRandomID(), client1[0], client2[0], client1[1], client2[1])
+    ongoingMatches.set(newMatch.id, newMatch)
+    clientIdsToMatches.set(client1[0].id, newMatch)
+    clientIdsToMatches.set(client2[0].id, newMatch)
+
+    startAndSendMatch(newMatch)
+}
+
+function startAndSendMatch(match: Match) {
+    const client1Team = Math.random() < 0.5
+    const startUnits = match.spawnStartUnits(client1Team)
+
+    const objTo1 = new MSGOBJS.ServerFoundMatch(new MatchData(match.client2Info, getElapsedTime(), client1Team, startUnits[0], startUnits[1]))
+    match.client1Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverFoundMatch, objTo1))
+    const objTo2 = new MSGOBJS.ServerFoundMatch(new MatchData(match.client1Info, getElapsedTime(), !client1Team, startUnits[1], startUnits[0]))
+    match.client2Socket.socket.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverFoundMatch, objTo2))
 }

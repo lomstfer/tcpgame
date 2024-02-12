@@ -7,7 +7,7 @@ import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 import * as COLORS from "./colors.js"
 
-const websocket = new WebSocket("ws://192.168.0.121:80")
+const websocket = new WebSocket("ws://192.168.1.227:80")
 NET.handleNetworking(websocket)
 
 // PIXI.settings.ROUND_PIXELS = false
@@ -21,39 +21,37 @@ const pixiApp = new PIXI.Application<HTMLCanvasElement>({
     autoStart: false,
 })
 
+GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+document.documentElement.style.setProperty("--scale-factor", ((window.innerWidth + window.innerHeight) / 3000).toString())
+
 window.addEventListener("resize", () => {
     GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+    document.documentElement.style.setProperty("--scale-factor", ((window.innerWidth + window.innerHeight) / 3000).toString())
 })
 document.addEventListener("contextmenu", (event) => {
     event.preventDefault()
 })
 
-// let visibilitychangeStart = performance.now()
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) {
         console.log('Tab is not visible')
-        // visibilitychangeStart = performance.now()
     } else {
         console.log('Tab is visible')
         NET.sendGameStateRequest(websocket)
-        // game?.handleVisibilityChange(performance.now() - visibilitychangeStart)
     }
 })
-
-let name = "me"
 
 const gameUI = document.getElementById("game-ui")
 const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    /* if (allow)
-        NET.findMatch(websocket, "player2") // for development speed */
-        console.log("eeee")
     if (findMatchForm) {
-        findMatchForm.style.display = allow ? "initial" : "none"
+        findMatchForm.style.display = allow ? "flex" : "none"
     }
 })
+
+let selfName = CONSTS.DEFAULT_NAME
 
 const findMatchButton = document.getElementById("find-match-button")
 findMatchButton?.addEventListener("click", () => {
@@ -61,8 +59,11 @@ findMatchButton?.addEventListener("click", () => {
     if (!nameInput) {
         return
     }
-    name = nameInput.value
-    NET.findMatch(websocket, nameInput.value)
+    console.log(nameInput.value.length, nameInput.value)
+    if (nameInput.value.length != 0) {
+        selfName = nameInput.value
+    }
+    NET.findMatch(websocket, selfName)
 })
 
 const versusText = document.getElementById("versus-text")
@@ -77,11 +78,17 @@ NET.netEventEmitter.on("matchWon", () => {
 NET.netEventEmitter.on("matchLost", () => {
     endMatch(false)
 })
+const disconnectText = document.getElementById("disconnect-text")
+NET.netEventEmitter.on("opponentDisconnected", () => {
+    if (disconnectText) {
+        disconnectText.textContent = "opponent disconnected"
+    }
+})
 
 const matchEndedScreen = document.getElementById("match-ended-screen")
 const matchEndedScreenResult = document.getElementById("match-ended-screen-result")
 function endMatch(won: boolean) {
-    
+    pixiApp.stop()
     if (matchEndedScreen) {
         if (matchEndedScreenResult) {
             matchEndedScreenResult.textContent = won ? "WINNER" : "LOOSER"
@@ -94,17 +101,40 @@ const matchEndedScreenGotoMenu = document.getElementById("match-ended-screen-got
 matchEndedScreenGotoMenu?.addEventListener("click", () => {
     enterMenu()
 })
+const matchEndedScreenRematch = document.getElementById("match-ended-screen-rematch")
+matchEndedScreenRematch?.addEventListener("click", () => {
+    NET.sendRematchRequest(websocket)
+})
+
+function removeGameElements() {
+    if (game) {
+        game.kill()
+        game = undefined
+    }
+
+    if (matchEndedScreen) {
+        matchEndedScreen.style.display = "none"
+    }
+
+    if (disconnectText) {
+        disconnectText.textContent = ""
+    }
+}
 
 function enterMatch(data: MatchData) {
+    GUTILS.scaleAndCenter(pixiApp.stage, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+
+    removeGameElements()
+
     if (gameUI) {
         gameUI.style.display = "initial"
     }
     if (versusText) {
         if (data.team) {
-            versusText.textContent = name + " VS " + data.otherClient.name
+            versusText.textContent = selfName + " VS " + data.otherClient.name
         }
         else {
-            versusText.textContent = data.otherClient.name + " VS " + name
+            versusText.textContent = data.otherClient.name + " VS " + selfName
         }
     }
     if (background) {
@@ -117,8 +147,10 @@ function enterMatch(data: MatchData) {
 }
 
 function enterMenu() {
+    NET.sendLeftMatch(websocket)
+
     if (findMatchForm) {
-        findMatchForm.style.display = "initial"
+        findMatchForm.style.display = "flex"
     }
     if (gameUI) {
         gameUI.style.display = "none"
@@ -134,7 +166,7 @@ function enterMenu() {
         matchEndedScreen.style.display = "none"
     }
 
-    game?.stop()
+    removeGameElements()
     pixiApp.stop()
 }
 

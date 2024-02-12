@@ -13,7 +13,7 @@
     <div id="background"></div>
 
     <div id="find-match-inputs">
-        <input type="text" id="find-match-name">
+        <input placeholder="username" type="text" id="find-match-name">
         <button id="find-match-button">find match</button>
     </div>
 
@@ -45,18 +45,14 @@
         </div>
 
         <div id="match-ended-screen">
-            <div id="match-ended-screen-result"></div>
-            <button id="match-ended-screen-gotomenu">menu</button>
+            <div id="match-ended-screen-parent">
+                <div id="match-ended-screen-result"></div>
+                <button id="match-ended-screen-gotomenu">menu</button>
+                <button id="match-ended-screen-rematch">rematch</button>
+            </div>
         </div>
 
-        <!-- <div id="inventory-parent">
-            <div id="inventory">
-                <h2>inventory</h2>
-                <div id="inventory-slots">
-    
-                </div>
-            </div>
-        </div> -->
+        <div id="disconnect-text"></div>
     </div>
 
     <script src="public/js/allthecode.js"></script>

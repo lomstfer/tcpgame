@@ -22,6 +22,8 @@ export enum MessageId {
     serverGameStateResponse,
     serverYouWon,
     serverYouLost,
+    clientRematch,
+    clientLeftMatch,
 }
 
 export function getByteFromMessage(messageID: MessageId): Uint8Array {

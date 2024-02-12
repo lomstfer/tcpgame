@@ -56,7 +56,6 @@ export class GameInstance {
             this.camera.setPosition(new Vec2(CONSTS.START_DISTANCE, 0))
         }
 
-        
         this.ui = new UI(matchTime)
         this.unitSelection = new UnitSelection()
         
@@ -119,7 +118,7 @@ export class GameInstance {
         } */
     }
     
-    stop() {
+    kill() {
         if (this.worldRoot != undefined) {
             this.appStage.removeChild(this.worldRoot)
         }

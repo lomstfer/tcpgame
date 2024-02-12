@@ -13,6 +13,7 @@ import { ExecuteDelayData } from "./executeDelayData.js"
 type netEvents = {
     allowFindMatch: boolean,
     foundMatch: MatchData,
+    opponentDisconnected: undefined,
     matchWon: undefined,
     matchLost: undefined,
     spawnServerUnitSelf: [ExecuteDelayData, Unit]
@@ -70,7 +71,7 @@ export function handleNetworking(ws: WebSocket) {
                 break
             }
             case MSG.MessageId.serverOpponentDisconnected: {                
-                netEventEmitter.emit("matchWon")
+                netEventEmitter.emit("opponentDisconnected")
                 break
             }
             case MSG.MessageId.serverSpawnUnitSelf: {
@@ -120,6 +121,10 @@ export function handleNetworking(ws: WebSocket) {
             }
         }
     }
+
+    ws.onclose = function(event) {
+        console.log("-------------CLOSED-------------")
+    }
 }
 
 export function findMatch(ws: WebSocket, name: string) {
@@ -161,4 +166,12 @@ export function sendMoveUnits(ws: WebSocket, data: [Set<Unit>, Vec2]) {
 
 export function sendGameStateRequest(ws: WebSocket) {
     ws.send(MSG.getByteFromMessage(MSG.MessageId.clientGameStateRequest))
+}
+
+export function sendRematchRequest(ws: WebSocket) {
+    ws.send(MSG.getByteFromMessage(MSG.MessageId.clientRematch))
+}
+
+export function sendLeftMatch(ws: WebSocket) {
+    ws.send(MSG.getByteFromMessage(MSG.MessageId.clientLeftMatch))
 }
