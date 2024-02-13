@@ -37,22 +37,24 @@ export class UnitHandler {
 
     private unitsUpdatedToSend = new Array<Unit>()
 
+    private unitsThatWillBeMoved = new Set<Unit>()
+
     constructor(client1Id: string, client2Id: string) {
         this.client1Id = client1Id
         this.client2Id = client2Id
 
-            ; (new NanoTimer()).setInterval(() => {
-                this.client1UnitsRemaining += 1
-                this.client2UnitsRemaining += 1
-            }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
+        ; (new NanoTimer()).setInterval(() => {
+            this.client1UnitsRemaining += 1
+            this.client2UnitsRemaining += 1
+        }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
 
         let start = performance.now()
-            ; (new NanoTimer()).setInterval(() => {
-                this.client1MovesRemaining += 1
-                this.client2MovesRemaining += 1
-                console.log(performance.now() - start)
-                start = performance.now()
-            }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
+        ; (new NanoTimer()).setInterval(() => {
+            this.client1MovesRemaining += 1
+            this.client2MovesRemaining += 1
+            console.log(performance.now() - start)
+            start = performance.now()
+        }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
     }
 
     simulate() {
@@ -170,16 +172,13 @@ export class UnitHandler {
 
         let clientUnits: Map<string, Unit>
         let selfUnitsGridPositions: Map<string, Unit>
-        let otherUnitsGridPositions: Map<string, Unit>
         if (ownerId == this.client1Id) {
             clientUnits = this.client1Units
             selfUnitsGridPositions = this.units1GridPositionsToData
-            otherUnitsGridPositions = this.units2GridPositionsToData
         }
         else if (ownerId == this.client2Id) {
             clientUnits = this.client2Units
             selfUnitsGridPositions = this.units2GridPositionsToData
-            otherUnitsGridPositions = this.units1GridPositionsToData
         }
         else {
             return
@@ -202,7 +201,6 @@ export class UnitHandler {
 
         const start = performance.now()
         for (const unit of units) {
-            const updatedUnit = lodash.cloneDeep(unit)
 
             let moveTo = UTILS.roundWorldPositionToGrid(here)
             const step = CONSTS.GRID_SQUARE_SIZE
@@ -238,19 +236,25 @@ export class UnitHandler {
             const roundedPositionString = JSON.stringify(moveTo)
             selfUnitsGridPositions.set(roundedPositionString, unit)
 
-            if ((moveTo.x == updatedUnit.position.x && moveTo.y == updatedUnit.position.y)) {
+            if ((moveTo.x == unit.position.x && moveTo.y == unit.position.y)) {
                 continue
             }
-            if (updatedUnit.movingTo) { // will only prevent if the unit is actually moving, not if a move command is queued
-                if (moveTo.x == updatedUnit.movingTo.x && moveTo.y == updatedUnit.movingTo.y) {
+            if (unit.movingTo) {
+                if (moveTo.x == unit.movingTo.x && moveTo.y == unit.movingTo.y) {
                     continue
                 }
             }
-
-            updatedUnit.movingTo = moveTo
-            this.unitsUpdatedToSend.push(updatedUnit)
+            if (this.unitsThatWillBeMoved.has(unit)) {
+                continue
+            }
 
             unitsToUpdateAfterDelay.push([unit, moveTo])
+            
+            this.unitsThatWillBeMoved.add(unit)
+
+            const updatedUnit = lodash.cloneDeep(unit)
+            updatedUnit.movingTo = moveTo
+            this.unitsUpdatedToSend.push(updatedUnit)
         }
 
         if (this.unitsUpdatedToSend.length == 0) {
@@ -266,6 +270,7 @@ export class UnitHandler {
 
         ; (new NanoTimer()).setTimeout(() => {
             for (const [u, newMoveTo] of unitsToUpdateAfterDelay) {
+                this.unitsThatWillBeMoved.delete(u)
                 u.movingTo = new Vec2(newMoveTo.x, newMoveTo.y)
                 const sp = JSON.stringify(u.position)
                 if (this.unitsGridPositionToOwner.get(sp) == ownerId) {
