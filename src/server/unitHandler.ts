@@ -35,7 +35,7 @@ export class UnitHandler {
     private units2GridPositionsToData = new Map<string, Unit>()
     private unitsGridPositionToOwner = new Map<string, /*clientid*/string>()
 
-    private unitsUpdated = new Array<Unit>()
+    private unitsUpdatedToSend = new Array<Unit>()
 
     constructor(client1Id: string, client2Id: string) {
         this.client1Id = client1Id
@@ -46,13 +46,18 @@ export class UnitHandler {
                 this.client2UnitsRemaining += 1
             }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
 
+        let start = performance.now()
             ; (new NanoTimer()).setInterval(() => {
                 this.client1MovesRemaining += 1
                 this.client2MovesRemaining += 1
+                console.log(performance.now() - start)
+                start = performance.now()
             }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
     }
 
     simulate() {
+        // console.log(this.client1MovesRemaining, this.client2MovesRemaining)
+
         for (const u of this.client1Units.values()) {
             if (SIMULATION.moveUnit(u, CONSTS.WORLD_UPDATE_S)[0]) {
                 this.onUnitArrived(this.client1Id, u.position, u)
@@ -100,8 +105,8 @@ export class UnitHandler {
     }
 
     trySpawnUnit(ownerId: string, position: Vec2, timeNow: number, delay: number): [Uint8Array, Uint8Array] | undefined {
-        if ((ownerId == this.client1Id && this.client1UnitsRemaining == 0) ||
-            (ownerId == this.client2Id && this.client2UnitsRemaining == 0)) {
+        if ((ownerId == this.client1Id && this.client1UnitsRemaining <= 0) ||
+            (ownerId == this.client2Id && this.client2UnitsRemaining <= 0)) {
             return undefined
         }
 
@@ -170,20 +175,20 @@ export class UnitHandler {
             clientUnits = this.client1Units
             selfUnitsGridPositions = this.units1GridPositionsToData
             otherUnitsGridPositions = this.units2GridPositionsToData
-            this.client1MovesRemaining -= 1
         }
-        else {
+        else if (ownerId == this.client2Id) {
             clientUnits = this.client2Units
             selfUnitsGridPositions = this.units2GridPositionsToData
             otherUnitsGridPositions = this.units1GridPositionsToData
-            this.client2MovesRemaining -= 1
+        }
+        else {
+            return
         }
 
         for (const id of unitIds) {
             const unit = clientUnits.get(id)
             if (unit != undefined) {
                 units.push(unit)
-                // averagePosition = Vec2.add(averagePosition, unit.position)
 
                 for (const [key, u] of selfUnitsGridPositions) {
                     if (u == unit) {
@@ -192,6 +197,8 @@ export class UnitHandler {
                 }
             }
         }
+
+        const unitsToUpdateAfterDelay: [Unit, newMoveTo: Vec2][] = []
 
         const start = performance.now()
         for (const unit of units) {
@@ -231,27 +238,47 @@ export class UnitHandler {
             const roundedPositionString = JSON.stringify(moveTo)
             selfUnitsGridPositions.set(roundedPositionString, unit)
 
-            if (moveTo.x == updatedUnit.position.x && moveTo.y == updatedUnit.position.y) {
+            if ((moveTo.x == updatedUnit.position.x && moveTo.y == updatedUnit.position.y)) {
                 continue
+            }
+            if (updatedUnit.movingTo) { // will only prevent if the unit is actually moving, not if a move command is queued
+                if (moveTo.x == updatedUnit.movingTo.x && moveTo.y == updatedUnit.movingTo.y) {
+                    continue
+                }
             }
 
             updatedUnit.movingTo = moveTo
-            this.unitsUpdated.push(updatedUnit)
+            this.unitsUpdatedToSend.push(updatedUnit)
 
-            const delay = inputDelay;
-            (new NanoTimer()).setTimeout(() => {
-                const sp = JSON.stringify(unit.position)
+            unitsToUpdateAfterDelay.push([unit, moveTo])
+        }
+
+        if (this.unitsUpdatedToSend.length == 0) {
+            return
+        }
+
+        if (ownerId == this.client1Id) {
+            this.client1MovesRemaining -= 1
+        }
+        else if (ownerId == this.client2Id) {
+            this.client2MovesRemaining -= 1
+        }
+
+        ; (new NanoTimer()).setTimeout(() => {
+            for (const [u, newMoveTo] of unitsToUpdateAfterDelay) {
+                u.movingTo = new Vec2(newMoveTo.x, newMoveTo.y)
+                const sp = JSON.stringify(u.position)
                 if (this.unitsGridPositionToOwner.get(sp) == ownerId) {
                     this.unitsGridPositionToOwner.delete(sp)
                 }
-                unit.movingTo = moveTo
-            }, "", delay.toString() + "m")
-        }
-        console.log(performance.now() - start)
+            }
+        }, "", inputDelay.toString() + "m")
+
+        // console.log(performance.now() - start)
     }
 
     consumeAlreadyUpdatedUnits(): Unit[] {
-        return this.unitsUpdated.splice(0, this.unitsUpdated.length)
+        return this.unitsUpdatedToSend.splice(0, this.unitsUpdatedToSend.length)
     }
 
     gridPositionOccupied(position: Vec2, positions: Map<string, Unit>): boolean {

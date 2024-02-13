@@ -1,7 +1,10 @@
 import { Unit } from "./unit.js"
 import { Vec2 } from "./utils.js"
 import * as CONSTS from "../shared/constants.js"
-
+/**
+ * 
+ * @returns [just stopped moving, moving]
+ */
 export function moveUnit(unit: Unit, deltaTimeS: number): [boolean, boolean] /* just stopped moving, moving */ {
     if (unit.movingTo == undefined) {
         return [false, false]

@@ -67,8 +67,8 @@ export function handleWS(server: Server) {
                     console.log(clientId, "rematch!")
                     const match = clientIdsToMatches.get(clientId)
                     if (match) {
-                        match.rematchState += 1
-                        if (match.rematchState >= 2) {
+                        match.setWantsToRematch(clientId)
+                        if (match.rematchable()) {
                             rematch(match, ongoingMatches, clientIdsToMatches)
                         }
                     }

@@ -42,8 +42,6 @@ export class UnitRepresentation {
         this.root.addChild(this.border)
 
         this.root.zIndex = 1
-
-        this.flipSprite(Math.random() - 0.5)
     }
     
     setSelected(selected: boolean) {

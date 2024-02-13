@@ -32,7 +32,7 @@ export class Match {
 
     matchEnded = false
 
-    rematchState: number = 0 // 2 == rematch
+    rematchState: [boolean, boolean] = [false, false] // [client1, client2]
 
     constructor(id: string, client1Socket: SocketData, client2Socket: SocketData, client1Info: ClientInfo, client2Info: ClientInfo) {
         this.id = id
@@ -234,5 +234,18 @@ export class Match {
             if (this.matchEnded == false)
                 this.endMatchWithWinner(this.client1Socket.id)
         }
+    }
+
+    setWantsToRematch(id: string) {
+        if (id == this.client1Socket.id) {
+            this.rematchState[0] = true
+        }
+        else if (id == this.client2Socket.id) {
+            this.rematchState[1] = true
+        }
+    }
+
+    rematchable(): boolean {
+        return this.rematchState[0] && this.rematchState[1]
     }
 }

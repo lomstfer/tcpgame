@@ -289,6 +289,7 @@ export class GameInstance {
         const uiData = this.ui.handleTimeAway(timeSinceSnapshot, this.selfUnitsToPlace, this.selfMovesLeft)
         this.selfUnitsToPlace = uiData[0]
         this.selfMovesLeft = uiData[1]
+        
         for (const updatedUnit of units) {
             const oldUnit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
             if (oldUnit) {
