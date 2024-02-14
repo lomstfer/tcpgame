@@ -18,6 +18,8 @@ export class UnitRepresentation {
     /* shapeFilter = new PIXI.Filter(undefined, shapeFragShader, {
         spreadOut: false
     }) */
+
+    yesSirAnimationTimeout: NodeJS.Timeout | undefined = undefined
     
     constructor(data: Unit, color: number) {
         this.data = data
@@ -43,12 +45,28 @@ export class UnitRepresentation {
 
         this.root.zIndex = 1
     }
+
+    yesSirAnimation() {
+        if (this.yesSirAnimationTimeout) {
+            clearTimeout(this.yesSirAnimationTimeout)
+            this.yesSirAnimationTimeout = undefined
+        }
+
+        const prev = [TEXTURES.textures.unit1, TEXTURES.textures.unit1Border]
+        this.body.texture = TEXTURES.textures.unit1YesSir
+        // this.border.texture = TEXTURES.textures.unit1YesSirBorder
+        this.yesSirAnimationTimeout = setTimeout(() => {
+            this.body.texture = prev[0]
+            this.border.texture = prev[1]
+            this.yesSirAnimationTimeout = undefined
+        }, 600)
+    }
     
     setSelected(selected: boolean) {
         this.border.visible = selected
     }
     
-    setMoving(moving: boolean) {
+    setIsMoving(moving: boolean) {
         // this.shapeFilter.uniforms.spreadOut = !moving
         this.root.zIndex = moving ? LAYERS.UNIT_MOVING : LAYERS.UNIT_STILL
     }

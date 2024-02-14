@@ -10,7 +10,7 @@ import * as LAYERS from "./layers.js"
 export class UnitSelection {
     sprite: PIXI.Sprite
 
-    selectedUnits = new Set<Unit>()
+    selectedUnits = new Set<UnitRepresentation>()
 
     private mouseDownPosition: Vec2 | undefined
 
@@ -57,11 +57,11 @@ export class UnitSelection {
                     u.root.x - CONSTS.UNIT_SIZE/2, u.root.y - CONSTS.UNIT_SIZE/2, CONSTS.UNIT_SIZE, CONSTS.UNIT_SIZE
             )) {
                 u.setSelected(true)
-                this.selectedUnits.add(u.data)
+                this.selectedUnits.add(u)
             }
             else {
                 u.setSelected(false)
-                this.selectedUnits.delete(u.data)
+                this.selectedUnits.delete(u)
             }
         }
     }
@@ -70,5 +70,9 @@ export class UnitSelection {
         this.sprite.visible = false
         this.sprite.width = 0
         this.sprite.height = 0
+    }
+
+    getSelectedUnitsData(): Unit[] {
+        return Array.from(this.selectedUnits, unitRep => unitRep.data)
     }
 }

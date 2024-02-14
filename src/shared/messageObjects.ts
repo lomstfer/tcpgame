@@ -107,15 +107,19 @@ export class ServerKillUnit {
 }
 
 export class ServerGameStateResponse {
-    timeOfSnapshot: number;
-    units: Unit[];
-    unitsToPlace: number;
-    movesLeft: number;
+    timeOfSnapshot: number
+    units: Unit[]
+    unitsToPlace: number
+    unitsToPlaceTime: number
+    movesLeft: number
+    movesLeftTime: number
 
-    constructor(timeOfSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number) {
-        this.timeOfSnapshot = timeOfSnapshot;
-        this.units = units;
-        this.unitsToPlace = unitsToPlace;
-        this.movesLeft = movesLeft;
+    constructor(timeOfSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number, unitsToPlaceTime: number, movesLeftTime: number) {
+        this.timeOfSnapshot = timeOfSnapshot
+        this.units = units
+        this.unitsToPlace = unitsToPlace
+        this.movesLeft = movesLeft
+        this.unitsToPlaceTime = unitsToPlaceTime
+        this.movesLeftTime = movesLeftTime
     }
 }

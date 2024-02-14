@@ -46,9 +46,12 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    if (findMatchForm) {
-        findMatchForm.style.display = allow ? "flex" : "none"
+    if (allow) {
+        NET.findMatch(websocket, "selfName")
     }
+    /* if (findMatchForm) {
+        findMatchForm.style.display = allow ? "flex" : "none"
+    } */
 })
 
 let selfName = CONSTS.DEFAULT_NAME
@@ -220,5 +223,5 @@ NET.netEventEmitter.on("killUnit", id => {
     game?.killUnit(id)
 })
 NET.netEventEmitter.on("serverGameStateRespone", data => {
-    game?.handleServerGameStateResponse(NET.getMatchTimeMS() - data.timeOfSnapshot, data.units, data.unitsToPlace, data.movesLeft)
+    game?.handleServerGameStateResponse(NET.getMatchTimeMS() - data.timeOfSnapshot, data.units, data.unitsToPlace, data.movesLeft, data.unitsToPlaceTime, data.movesLeftTime)
 })

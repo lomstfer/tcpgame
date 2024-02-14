@@ -18,7 +18,7 @@ import { UI } from "./ui.js"
 
 type gameEvents = {
     spawnUnitCommand: Vec2
-    moveUnitsCommand: [Set<Unit>, Vec2]
+    moveUnitsCommand: [Unit[], Vec2]
 }
 export const gameEventEmitter = mitt<gameEvents>()
 
@@ -135,11 +135,16 @@ export class GameInstance {
         this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
         if (this.mouseWorldPosition) {
             if (keys.keyPressed("KeyR")) {
-                gameEventEmitter.emit("spawnUnitCommand", this.mouseWorldPosition)
+                gameEventEmitter.emit("spawnUnitCommand", Vec2.clampToWorld(this.mouseWorldPosition))
             }
 
             if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
-                gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.selectedUnits, this.mouseWorldPosition])
+                if (this.selfMovesLeft) {
+                    for (const u of this.unitSelection.selectedUnits) {
+                        u.yesSirAnimation()
+                    }
+                }
+                gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.getSelectedUnitsData(), this.mouseWorldPosition])
             }
         }
 
@@ -156,7 +161,7 @@ export class GameInstance {
     }
 
     fixedUpdate() {
-        this.moveUnits()
+        this.moveUnitsSimulation()
     }
 
     interpolate(alpha: number) {
@@ -171,14 +176,14 @@ export class GameInstance {
         }
     }
 
-    private moveUnits() {
+    private moveUnitsSimulation() {
         for (const u of this.selfUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
-            u.setMoving(SIMULATION.moveUnit(u.data, CONSTS.WORLD_UPDATE_S)[1])
+            u.setIsMoving(SIMULATION.moveUnit(u.data, CONSTS.WORLD_UPDATE_S)[1])
         }
         for (const u of this.otherUnits.values()) {
             this.oldUnitsPositions.set(u.data.id, u.data.position)
-            u.setMoving(SIMULATION.moveUnit(u.data, CONSTS.WORLD_UPDATE_S)[1])
+            u.setIsMoving(SIMULATION.moveUnit(u.data, CONSTS.WORLD_UPDATE_S)[1])
         }
     }
 
@@ -215,7 +220,6 @@ export class GameInstance {
 
             for (const updatedUnit of units) {
                 if (updatedUnit.movingTo == undefined) {
-                    console.log("updatedUnit.movingTo == undefined   (WHAT)")
                     continue
                 }
                 const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
@@ -236,39 +240,14 @@ export class GameInstance {
                 if (this.selfUnits.has(units[0].id)) {
                     this.selfMovesLeft -= 1
                 }
-                this.enforceServerUpdate(units, delayData.timeSinceSent + delayData.timeUntilExecute)
-            }, delayData.timeUntilExecute)
-        }
-    }
 
-    timeSinceLastUpdate: number | undefined
-    lastUpdateTime: number | undefined
-    private enforceServerUpdate(units: Unit[], timeSinceSent: number) {
-        if (this.lastUpdateTime) {
-            this.timeSinceLastUpdate = Date.now() - this.lastUpdateTime
-        }
-        this.lastUpdateTime = Date.now()
-
-        for (const updatedUnit of units) {
-            const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
-            if (unit != undefined) {
-                /* if (unit.data.movingTo != undefined &&
-                    ((this.timeSinceLastUpdate && this.timeSinceLastUpdate > timeSinceSent) || !this.timeSinceLastUpdate)
-                ) {
-                    // take into account that the updated data is old
-                    const direction = Vec2.normalize(Vec2.sub(unit.data.movingTo, updatedUnit.position))
-                    const distance = Vec2.multiply(direction, timeSinceSent * 0.001 * CONSTS.UNIT_SPEED)
-                    const prediction = Vec2.add(updatedUnit.position, distance)
-
-                    const diff = Vec2.squareLengthOf(Vec2.sub(unit.data.position, prediction))
-                    if (diff > 10 * 10) {
-                        unit.data.position = prediction
-                        console.log("DIFF CORRECTION")
+                for (const updatedUnit of units) {
+                    const unit = this.selfUnits.get(updatedUnit.id) || this.otherUnits.get(updatedUnit.id)
+                    if (unit != undefined) {
+                        unit.data.movingTo = updatedUnit.movingTo
                     }
-                } */
-
-                unit.data.movingTo = updatedUnit.movingTo
-            }
+                }
+            }, delayData.timeUntilExecute)
         }
     }
 
@@ -282,11 +261,11 @@ export class GameInstance {
         this.oldUnitsPositions.delete(id)
     }
 
-    handleServerGameStateResponse(timeSinceSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number) {
+    handleServerGameStateResponse(timeSinceSnapshot: number, units: Unit[], unitsToPlace: number, movesLeft: number, unitsToPlaceTime: number, movesLeftTime: number) {
         this.selfUnitsToPlace = unitsToPlace
         this.selfMovesLeft = movesLeft
 
-        const uiData = this.ui.handleTimeAway(timeSinceSnapshot, this.selfUnitsToPlace, this.selfMovesLeft)
+        const uiData = this.ui.handleTimeAway(timeSinceSnapshot, this.selfUnitsToPlace, this.selfMovesLeft, unitsToPlaceTime, movesLeftTime)
         this.selfUnitsToPlace = uiData[0]
         this.selfMovesLeft = uiData[1]
         
@@ -295,7 +274,7 @@ export class GameInstance {
             if (oldUnit) {
                 oldUnit.data.position = updatedUnit.position
                 oldUnit.data.movingTo = updatedUnit.movingTo
-                oldUnit.setMoving(SIMULATION.moveUnit(oldUnit.data, timeSinceSnapshot / 1000)[1])
+                oldUnit.setIsMoving(SIMULATION.moveUnit(oldUnit.data, timeSinceSnapshot / 1000)[1])
             }
         }
     }

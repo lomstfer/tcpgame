@@ -190,21 +190,11 @@ export class Match {
     }
 
     sendGameStateResponse(clientId: string) {
-        let units: Unit[] = Array.from(this.unitHandler.client1Units.values()).concat(Array.from(this.unitHandler.client2Units.values()))
-        let unitsToPlace: number = 0
-        let movesLeft: number = 0
-        let socket: WebSocket | undefined
-        if (clientId == this.client1Socket.id) {
-            unitsToPlace = this.unitHandler.client1UnitsRemaining
-            movesLeft = this.unitHandler.client1MovesRemaining
-            socket = this.client1Socket.socket
-        }
-        else if (clientId == this.client2Socket.id) {
-            unitsToPlace = this.unitHandler.client2UnitsRemaining
-            movesLeft = this.unitHandler.client2MovesRemaining
-            socket = this.client2Socket.socket
-        }
-        const obj = new MSGOBJS.ServerGameStateResponse(this.getMatchTime(), units, unitsToPlace, movesLeft)
+        const unitData = this.unitHandler.getServerGameStateResponse(clientId)
+        const obj = new MSGOBJS.ServerGameStateResponse(this.getMatchTime(), unitData.units, unitData.unitsToPlace, unitData.movesLeft, unitData.unitsToPlaceTime, unitData.movesLeftTime)
+        const socket = clientId == this.client1Socket.id ? this.client1Socket.socket : 
+                       clientId == this.client2Socket.id ? this.client2Socket.socket :
+                       undefined
         socket?.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.serverGameStateResponse, obj))
     }
 

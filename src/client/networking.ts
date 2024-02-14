@@ -23,8 +23,8 @@ type netEvents = {
     serverGameStateRespone: MSGOBJS.ServerGameStateResponse
 }
 
-export const TIME_SYNC_WAIT = 200
-export const TIME_SYNCS_TO_DO = 20
+export const TIME_SYNC_WAIT = 20
+export const TIME_SYNCS_TO_DO = 2
 
 export const netEventEmitter = mitt<netEvents>()
 
@@ -157,7 +157,7 @@ export function sendSpawnUnit(ws: WebSocket, position: Vec2) {
     ws.send(bytes)
 }
 
-export function sendMoveUnits(ws: WebSocket, data: [Set<Unit>, Vec2]) {
+export function sendMoveUnits(ws: WebSocket, data: [Unit[], Vec2]) {
     const ids = Array.from(data[0]).map(u => u.id)
     const obj = new MSGOBJS.ClientMoveUnits(ids, data[1])
     const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.clientMatchMoveUnits, obj)

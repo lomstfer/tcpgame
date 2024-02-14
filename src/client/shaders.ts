@@ -11,12 +11,20 @@ export const gridFragShader = `
     uniform vec2 uSize;
     uniform vec2 uWorldPosition;
     uniform float uGridSquareSize;
+    uniform vec2 uWorldSize;
 
     void main(void) {
         vec2 worldPos = vTextureCoord * inputSize.xy / outputFrame.zw * uSize + uWorldPosition;
                     
         vec3 grid = vec3(1.0, 1.0, 1.0);
         vec4 color = vec4(0.0);
+
+        if (worldPos.x >= uWorldSize.x-3.0+uGridSquareSize || worldPos.x <= -uWorldSize.x+3.0 || 
+            worldPos.y >= uWorldSize.y-3.0+uGridSquareSize || worldPos.y <= -uWorldSize.y+3.0
+        ) {
+            gl_FragColor = color;
+            return;
+        }
 
         vec2 b = worldPos / uGridSquareSize;
         

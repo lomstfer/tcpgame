@@ -19,6 +19,14 @@ export class Camera {
         return GUTILS.getMouseWorldPosition(mousePositionOnCanvas, this.worldPosition, container, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
     }
 
+    getMouseWorldPositionClampedToWorldSize(
+        mousePositionOnCanvas: PIXI.Point | Vec2, 
+        container: PIXI.Container<PIXI.DisplayObject>, 
+    ): Vec2 {
+        const p = GUTILS.getMouseWorldPosition(mousePositionOnCanvas, this.worldPosition, container, CONSTS.GAME_WIDTH, CONSTS.GAME_HEIGHT)
+        return Vec2.clamp(p, new Vec2(-CONSTS.WORLD_WIDTH/2, -CONSTS.WORLD_HEIGHT/2), new Vec2(CONSTS.WORLD_WIDTH/2, CONSTS.WORLD_HEIGHT/2))
+    }
+
     update(deltaTime: number, keys: KeyInput) {        
         let keyInput = new Vec2(0, 0)
         if (keys.isKeyDown("KeyA")) {

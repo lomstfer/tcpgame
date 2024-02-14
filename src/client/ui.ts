@@ -38,7 +38,7 @@ export class UI {
     update(deltaTime: number, time: number, unitsLeft: number, movesLeft: number): [number, number] {
         if (this.nextUnitFill) {
             this.newUnitTime += deltaTime
-            if (this.newUnitTime >= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS) {
+            while (this.newUnitTime >= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS) {
                 unitsLeft += 1
                 this.newUnitTime -= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
             }
@@ -48,7 +48,7 @@ export class UI {
 
         if (this.nextMoveFill) {
             this.newMoveTime += deltaTime
-            if (this.newMoveTime >= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS) {
+            while (this.newMoveTime >= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS) {
                 movesLeft += 1
                 this.newMoveTime -= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
             }
@@ -66,14 +66,14 @@ export class UI {
         return [unitsLeft, movesLeft]
     }
 
-    handleTimeAway(timeAwayMS: number, unitsLeft: number, movesLeft: number): [number, number] {
+    handleTimeAway(timeAwayMS: number, unitsLeft: number, movesLeft: number, unitsLeftTime: number, movesLeftTime: number): [number, number] {
         const unitsToAdd = Math.floor(timeAwayMS / CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS)
         unitsLeft += unitsToAdd
-        this.newUnitTime += timeAwayMS - unitsToAdd * CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
+        this.newUnitTime = unitsLeftTime + timeAwayMS - unitsToAdd * CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
         
         const movesToAdd = Math.floor(timeAwayMS / CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS)
         movesLeft += movesToAdd
-        this.newMoveTime += timeAwayMS - movesToAdd * CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
+        this.newMoveTime = movesLeftTime + timeAwayMS - movesToAdd * CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
         
         return [unitsLeft, movesLeft]
     }

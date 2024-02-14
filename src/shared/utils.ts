@@ -1,5 +1,6 @@
 import * as PIXI from "pixi.js"
 import {GRID_SQUARE_SIZE} from "../shared/constants.js"
+import * as CONSTS from "../shared/constants.js"
 
 export function getAverage(array: number[]): number {
     let sum = 0
@@ -121,6 +122,30 @@ export class Vec2 {
         return new Vec2(Math.round(v.x), Math.round(v.y))
     }
 
+    static clamp(v: Vec2, min: Vec2, max: Vec2): Vec2 {
+        const out = new Vec2(v.x, v.y)
+        if (out.x < min.x) {
+            out.x = min.x
+        }
+        if (out.y < min.y) {
+            out.y = min.y
+        }
+        if (out.x > max.x) {
+            out.x = max.x
+        }
+        if (out.y > max.y) {
+            out.y = max.y
+        }
+        return out
+    }
+
+    static clampToWorld(v: Vec2): Vec2 {
+        return Vec2.clamp(v, 
+            new Vec2(-CONSTS.WORLD_WIDTH/2, -CONSTS.WORLD_HEIGHT/2), 
+            new Vec2(CONSTS.WORLD_WIDTH/2, CONSTS.WORLD_HEIGHT/2)
+        )
+    }
+    
     /* static minLength(vec: Vec2, minimum: number): Vec2 {
         let lenSqr = vec.x * vec.x + vec.y * vec.y
         if (lenSqr == 0) {

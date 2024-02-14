@@ -39,26 +39,31 @@ export class UnitHandler {
 
     private unitsThatWillBeMoved = new Set<Unit>()
 
+    private newUnitTime: number = 0
+    private newMoveTime: number = 0
+    private lastTime: number = performance.now()
+
     constructor(client1Id: string, client2Id: string) {
         this.client1Id = client1Id
         this.client2Id = client2Id
-
-        ; (new NanoTimer()).setInterval(() => {
-            this.client1UnitsRemaining += 1
-            this.client2UnitsRemaining += 1
-        }, "", CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS + "m")
-
-        let start = performance.now()
-        ; (new NanoTimer()).setInterval(() => {
-            this.client1MovesRemaining += 1
-            this.client2MovesRemaining += 1
-            console.log(performance.now() - start)
-            start = performance.now()
-        }, "", CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS + "m")
     }
 
     simulate() {
-        // console.log(this.client1MovesRemaining, this.client2MovesRemaining)
+        const dt = performance.now() - this.lastTime
+        this.newUnitTime += dt
+        if (this.newUnitTime >= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS) {
+            this.client1UnitsRemaining += 1
+            this.client2UnitsRemaining += 1
+            this.newUnitTime -= CONSTS.CLIENT_GET_NEW_UNIT_TIME_MS
+        }
+        this.newMoveTime += dt
+        if (this.newMoveTime >= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS) {
+            this.client1MovesRemaining += 1
+            this.client2MovesRemaining += 1
+            this.newMoveTime -= CONSTS.CLIENT_GET_NEW_MOVE_TIME_MS
+        }
+
+        this.lastTime = performance.now()
 
         for (const u of this.client1Units.values()) {
             if (SIMULATION.moveUnit(u, CONSTS.WORLD_UPDATE_S)[0]) {
@@ -112,6 +117,8 @@ export class UnitHandler {
             return undefined
         }
 
+        position = Vec2.clampToWorld(position)
+
         const unit = this.spawnUnitForFree(ownerId, position)
         if (unit == undefined) {
             return undefined
@@ -139,6 +146,8 @@ export class UnitHandler {
     }
 
     spawnUnitForFree(ownerId: string, position: Vec2): Unit | undefined {
+        position = Vec2.clampToWorld(position)
+        
         const gridPos = UTILS.roundWorldPositionToGrid(position)
         const gridPosString = JSON.stringify(gridPos)
         const occupyingUnit = this.units1GridPositionsToData.get(gridPosString) || this.units2GridPositionsToData.get(gridPosString)
@@ -166,6 +175,8 @@ export class UnitHandler {
             (ownerId == this.client2Id && this.client2MovesRemaining <= 0)) {
             return
         }
+
+        here = Vec2.clampToWorld(here)
 
         const units: Unit[] = []
         // let averagePosition: Vec2 = new Vec2(0, 0)
@@ -201,6 +212,9 @@ export class UnitHandler {
 
         const start = performance.now()
         for (const unit of units) {
+            if (performance.now() - start > 10) {
+                return
+            }
 
             let moveTo = UTILS.roundWorldPositionToGrid(here)
             const step = CONSTS.GRID_SQUARE_SIZE
@@ -217,12 +231,14 @@ export class UnitHandler {
                     break
                 }
 
-                const neighbors = [
+                let neighbors = [
                     new Vec2(moveTo.x + step, moveTo.y),
                     new Vec2(moveTo.x - step, moveTo.y),
                     new Vec2(moveTo.x, moveTo.y + step),
                     new Vec2(moveTo.x, moveTo.y - step)
                 ]
+                neighbors = neighbors.filter(v => v.x >= -CONSTS.WORLD_WIDTH/2 && v.x <= CONSTS.WORLD_WIDTH/2 &&
+                                             v.y >= -CONSTS.WORLD_HEIGHT/2 && v.y <= CONSTS.WORLD_HEIGHT/2)
 
                 for (const n of neighbors) {
                     const ns = JSON.stringify(n)
@@ -289,5 +305,27 @@ export class UnitHandler {
     gridPositionOccupied(position: Vec2, positions: Map<string, Unit>): boolean {
         const has = positions.has(JSON.stringify(position))
         return has
+    }
+
+    getServerGameStateResponse(clientId: string) {
+        let unitsToPlace: number = 0
+        let movesLeft: number = 0
+        
+        if (clientId == this.client1Id) {
+            unitsToPlace = this.client1UnitsRemaining
+            movesLeft = this.client1MovesRemaining
+        }
+        else if (clientId == this.client2Id) {
+            unitsToPlace = this.client2UnitsRemaining
+            movesLeft = this.client2MovesRemaining
+        }
+
+        return {
+            units: Array.from(this.client1Units.values()).concat(Array.from(this.client2Units.values())),
+            unitsToPlace: unitsToPlace,
+            movesLeft: movesLeft,
+            unitsToPlaceTime: this.newUnitTime,
+            movesLeftTime: this.newMoveTime
+        }
     }
 }
