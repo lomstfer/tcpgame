@@ -21,6 +21,5 @@ export function moveUnit(unit: Unit, deltaTimeS: number): [boolean, boolean] /* 
     }
     d = Vec2.normalize(d)
     unit.position = Vec2.add(unit.position, Vec2.multiply(d, CONSTS.UNIT_SPEED * deltaTimeS))
-    // console.log(unit.position.x, unit.position.y)
     return [false, true]
 }

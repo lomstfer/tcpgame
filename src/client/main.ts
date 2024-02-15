@@ -46,12 +46,12 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    if (allow) {
+    /* if (allow) {
         NET.findMatch(websocket, "selfName")
-    }
-    /* if (findMatchForm) {
-        findMatchForm.style.display = allow ? "flex" : "none"
     } */
+    if (findMatchForm) {
+        findMatchForm.style.display = allow ? "flex" : "none"
+    }
 })
 
 let selfName = CONSTS.DEFAULT_NAME
@@ -62,7 +62,6 @@ findMatchButton?.addEventListener("click", () => {
     if (!nameInput) {
         return
     }
-    console.log(nameInput.value.length, nameInput.value)
     if (nameInput.value.length != 0) {
         selfName = nameInput.value
     }

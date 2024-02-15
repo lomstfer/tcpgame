@@ -55,7 +55,7 @@ export function handleWS(server: Server) {
                     break
                 }
                 case MSG.MessageId.clientEnterMatchFinder: {
-                    console.log("clientEnterMatchFinder", Date.now())
+                    console.log("clientEnterMatchFinder")
                     const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientEnterMatchFinder>(bytes)
                     if (msgObj == undefined) {
                         break

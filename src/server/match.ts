@@ -78,7 +78,6 @@ export class Match {
                 if (msgObj == undefined) {
                     break
                 }
-
                 const spawned = this.unitHandler.trySpawnUnit(clientId, msgObj.position, this.getMatchTime(), this.getInputDelay())
                 if (spawned != undefined) {
                     this.client1Socket.socket.send(spawned[0])
@@ -149,7 +148,6 @@ export class Match {
         }
 
         const delay = this.getInputDelay()
-        // console.log("delay:", delay)
         const matchTime = this.getMatchTime()
         const obj = new MSGOBJS.ServerUnitsUpdate(units, new MSGOBJS.CommandTimeData(matchTime, matchTime + delay))
         const bytes = MSG.getBytesFromMessageAndObj(MSG.MessageId.serverUnitsUpdate, obj)

@@ -23,8 +23,8 @@ type netEvents = {
     serverGameStateRespone: MSGOBJS.ServerGameStateResponse
 }
 
-export const TIME_SYNC_WAIT = 20
-export const TIME_SYNCS_TO_DO = 2
+export const TIME_SYNC_WAIT = 200
+export const TIME_SYNCS_TO_DO = 20
 
 export const netEventEmitter = mitt<netEvents>()
 
@@ -54,7 +54,7 @@ export function handleNetworking(ws: WebSocket) {
                 const sentTime = MSG.getObjectFromBytes<MSGOBJS.ServerPing>(bytes).sentFromServerTime
                 const obj = new MSGOBJS.ClientPong(sentTime)
                 ws.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.clientPong, obj))
-                console.log("time d:", serverTimeSyncer.getServerTime() - sentTime)
+                // console.log("time d:", serverTimeSyncer.getServerTime() - sentTime)
                 break
             }
             case MSG.MessageId.serverTimeAnswer: {
@@ -65,7 +65,6 @@ export function handleNetworking(ws: WebSocket) {
             case MSG.MessageId.serverFoundMatch: {
                 const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerFoundMatch>(bytes)
                 currentMatchData = msgObj.data
-                console.log("found match")
                 
                 netEventEmitter.emit("foundMatch", msgObj.data)
                 break
@@ -75,7 +74,7 @@ export function handleNetworking(ws: WebSocket) {
                 break
             }
             case MSG.MessageId.serverSpawnUnitSelf: {
-                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnitSelf>(bytes)  
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnit>(bytes)  
                               
                 netEventEmitter.emit("spawnServerUnitSelf", [
                     ExecuteDelayData.fromReceivedTimeData(getMatchTimeMS(), msgObj.timeData),
@@ -84,7 +83,7 @@ export function handleNetworking(ws: WebSocket) {
                 break
             }
             case MSG.MessageId.serverSpawnUnitOther: {
-                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnitOther>(bytes)
+                const msgObj = MSG.getObjectFromBytes<MSGOBJS.ServerSpawnUnit>(bytes)
 
                 netEventEmitter.emit("spawnServerUnitOther", [
                     ExecuteDelayData.fromReceivedTimeData(getMatchTimeMS(), msgObj.timeData),

@@ -1,1 +1,1 @@
-export const INPUT_DELAY_MINIMUM_MS = 200
+export const INPUT_DELAY_MINIMUM_MS = 0

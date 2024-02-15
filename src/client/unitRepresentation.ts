@@ -15,10 +15,6 @@ export class UnitRepresentation {
 
     color: number
 
-    /* shapeFilter = new PIXI.Filter(undefined, shapeFragShader, {
-        spreadOut: false
-    }) */
-
     yesSirAnimationTimeout: NodeJS.Timeout | undefined = undefined
     
     constructor(data: Unit, color: number) {
@@ -29,13 +25,10 @@ export class UnitRepresentation {
         this.root.y = data.position.y
     
         this.body = PIXI.Sprite.from(TEXTURES.textures.unit1)
-        this.body.pivot.set(this.body.width/2, this.body.height/2)
         this.body.scale.set(TEXTURES.baseScale)
         this.body.tint = color
-        // this.body.filters = [this.shapeFilter/* , new PIXI.FXAAFilter() */]
 
         this.border = PIXI.Sprite.from(TEXTURES.textures.unit1Border)
-        this.border.pivot.set(this.border.width/2, this.border.height/2)
         this.border.scale.set(TEXTURES.baseScale)
         this.border.visible = false
         this.border.tint = COLORS.SELECTED_UNIT_BORDER_COLOR
@@ -43,7 +36,7 @@ export class UnitRepresentation {
         this.root.addChild(this.body)
         this.root.addChild(this.border)
 
-        this.root.zIndex = 1
+        this.root.zIndex = LAYERS.UNIT_STILL
     }
 
     yesSirAnimation() {
@@ -52,14 +45,13 @@ export class UnitRepresentation {
             this.yesSirAnimationTimeout = undefined
         }
 
-        const prev = [TEXTURES.textures.unit1, TEXTURES.textures.unit1Border]
         this.body.texture = TEXTURES.textures.unit1YesSir
-        // this.border.texture = TEXTURES.textures.unit1YesSirBorder
+        this.border.texture = TEXTURES.textures.unit1YesSirBorder
         this.yesSirAnimationTimeout = setTimeout(() => {
-            this.body.texture = prev[0]
-            this.border.texture = prev[1]
+            this.body.texture = TEXTURES.textures.unit1
+            this.border.texture = TEXTURES.textures.unit1Border
             this.yesSirAnimationTimeout = undefined
-        }, 600)
+        }, 200)
     }
     
     setSelected(selected: boolean) {
@@ -67,7 +59,6 @@ export class UnitRepresentation {
     }
     
     setIsMoving(moving: boolean) {
-        // this.shapeFilter.uniforms.spreadOut = !moving
         this.root.zIndex = moving ? LAYERS.UNIT_MOVING : LAYERS.UNIT_STILL
     }
 

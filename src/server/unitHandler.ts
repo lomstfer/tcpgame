@@ -126,11 +126,11 @@ export class UnitHandler {
 
         const selfBytes = MSG.getBytesFromMessageAndObj(
             MSG.MessageId.serverSpawnUnitSelf,
-            new MSGOBJS.ServerSpawnUnitSelf(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
+            new MSGOBJS.ServerSpawnUnit(unit, new MSGOBJS.CommandTimeData(timeNow, timeNow + delay))
         )
         const otherBytes = MSG.getBytesFromMessageAndObj(
             MSG.MessageId.serverSpawnUnitOther,
-            new MSGOBJS.ServerSpawnUnitOther(unit, new MSGOBJS.CommandTimeData(timeNow, delay))
+            new MSGOBJS.ServerSpawnUnit(unit, new MSGOBJS.CommandTimeData(timeNow, timeNow + delay))
         )
 
         if (ownerId == this.client1Id) {

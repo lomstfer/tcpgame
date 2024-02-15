@@ -63,16 +63,7 @@ export class CommandTimeData {
     }
 }
 
-export class ServerSpawnUnitSelf {
-    unit: Unit
-    timeData: CommandTimeData
-    constructor(unit: Unit, timeData: CommandTimeData) {
-        this.unit = unit
-        this.timeData = timeData
-    }
-}
-
-export class ServerSpawnUnitOther {
+export class ServerSpawnUnit {
     unit: Unit
     timeData: CommandTimeData
     constructor(unit: Unit, timeData: CommandTimeData) {

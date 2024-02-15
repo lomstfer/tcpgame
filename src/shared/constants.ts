@@ -11,10 +11,8 @@ export const UNIT_SPEED = 130
 export const GRID_SQUARE_SIZE = 40
 export const UNIT_SIZE = 40
 
-// export const MATCH_START_TIME_S = 5
-
-export const CLIENT_GET_NEW_UNIT_TIME_MS = 1000
-export const CLIENT_GET_NEW_MOVE_TIME_MS = 300
+export const CLIENT_GET_NEW_UNIT_TIME_MS = 6000
+export const CLIENT_GET_NEW_MOVE_TIME_MS = 4000
 
 export const WORLD_WIDTH = GRID_SQUARE_SIZE * 18
 export const WORLD_HEIGHT = GRID_SQUARE_SIZE * 18

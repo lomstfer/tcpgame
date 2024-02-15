@@ -79,11 +79,9 @@ export class GameInstance {
         this.worldRoot.addChild(this.unitSelection.sprite)
         
         for (const u of matchData.startSelfUnits) {
-            console.log(u)
             this.spawnUnitSelfNoDelay(u)
         }
         for (const u of matchData.startOtherUnits) {
-            console.log("2", u)
             this.spawnUnitOtherNoDelay(u)
         }
 
