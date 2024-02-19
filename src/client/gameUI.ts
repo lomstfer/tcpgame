@@ -1,7 +1,7 @@
 import * as COLORS from "./colors.js"
 import * as CONSTS from "../shared/constants.js"
 
-export class UI {
+export class GameUI {
     private nextUnitFill: HTMLElement | null = null
     private unitsToPlace: HTMLElement | null = null
 

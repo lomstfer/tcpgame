@@ -1,4 +1,4 @@
-import { Server } from "node:http"
+import { Server } from "node:https"
 import express from "express"
 
 export function handleHttp(server: Server) {

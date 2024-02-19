@@ -59,6 +59,15 @@ button:active {
     transform: scale(0.95);
 }
 
+#finding-match-text {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: calc(var(--scale-size) * 5);
+}
+
 #game-ui {
     display: none;
 }
@@ -79,7 +88,6 @@ button:active {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    /* gap: calc(var(--scale-size) * 2); */
     transform: scale(calc(var(--scale-factor) * 2));
     gap: 10px;
 }

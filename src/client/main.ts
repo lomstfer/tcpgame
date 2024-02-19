@@ -7,10 +7,9 @@ import { MatchData } from "../shared/matchData.js"
 import { KeyInput } from "./keyInput.js"
 import * as COLORS from "./colors.js"
 
-const websocket = new WebSocket("ws://192.168.1.227:80")
+const websocket = new WebSocket("wss://127.0.0.1:443")
 NET.handleNetworking(websocket)
 
-// PIXI.settings.ROUND_PIXELS = false
 const pixiApp = new PIXI.Application<HTMLCanvasElement>({
     background: COLORS.BACKGROUND,
     width: CONSTS.GAME_WIDTH,
@@ -32,7 +31,7 @@ document.addEventListener("contextmenu", (event) => {
     event.preventDefault()
 })
 
-document.addEventListener('visibilitychange', function() {
+document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
         console.log('Tab is not visible')
     } else {
@@ -56,6 +55,8 @@ NET.netEventEmitter.on("allowFindMatch", allow => {
 
 let selfName = CONSTS.DEFAULT_NAME
 
+const findingMatchText = document.getElementById("finding-match-text")
+
 const findMatchButton = document.getElementById("find-match-button")
 findMatchButton?.addEventListener("click", () => {
     const nameInput = document.getElementById("find-match-name") as HTMLInputElement | null
@@ -66,11 +67,59 @@ findMatchButton?.addEventListener("click", () => {
         selfName = nameInput.value
     }
     NET.findMatch(websocket, selfName)
+    if (findingMatchText) {
+        findingMatchText.textContent = "finding match"
+        startFindingMatchAnimation()
+    }
 })
+
+function startFindingMatchAnimation() {
+    let dotCount = 3
+    let goingDown = false
+    const interval = setInterval(() => {
+        if (!findingMatchText) {
+            console.log("e")
+            clearInterval(interval)
+            return
+        }
+        if (!findingMatchText.textContent || findingMatchText.textContent == "") {
+            console.log("ee")
+            clearInterval(interval)
+            return
+        }
+
+        
+        if (!goingDown) {
+            dotCount += 1
+            if (dotCount >= 6) {
+                goingDown = true
+            }
+        }
+        else {
+            dotCount -= 1
+            if (dotCount <= 0) {
+                goingDown = false
+            }
+        }
+
+        findingMatchText.textContent = "finding match"
+        let len = findingMatchText.textContent.length
+        findingMatchText.textContent = findingMatchText.textContent.padStart(len + 3 - dotCount, ".")
+        len = findingMatchText.textContent.length
+        findingMatchText.textContent = findingMatchText.textContent.padEnd(len +  dotCount - 3, ".")
+    }, 500)
+}
+
+function endFindingMatchAnimation() {
+    if (findingMatchText) {
+        findingMatchText.textContent = ""
+    }
+}
 
 const versusText = document.getElementById("versus-text")
 const matchTime = document.getElementById("time")
 NET.netEventEmitter.on("foundMatch", data => {
+    endFindingMatchAnimation()
     enterMatch(data)
 })
 
@@ -95,7 +144,7 @@ function endMatch(won: boolean) {
         if (matchEndedScreenResult) {
             matchEndedScreenResult.textContent = won ? "WINNER" : "LOOSER"
         }
-        
+
         matchEndedScreen.style.display = "flex"
     }
 }
@@ -164,7 +213,7 @@ function enterMenu() {
         if (matchEndedScreenResult) {
             matchEndedScreenResult.textContent = ""
         }
-        
+
         matchEndedScreen.style.display = "none"
     }
 
@@ -181,24 +230,24 @@ let accumulator = 0
 let game: GAME.GameInstance | undefined = undefined
 pixiApp.ticker.add(() => {
     const dt = pixiApp.ticker.deltaMS / 1000
-    
+
     if (matchTime) {
         let milliseconds = Math.floor(NET.getMatchTimeMS())
         let seconds = Math.floor(milliseconds / 1000)
         let minutes = Math.floor(seconds / 60)
         seconds = seconds % 60
         milliseconds = milliseconds % 1000
-        matchTime.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds/100)}`
+        matchTime.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds / 100)}`
     }
 
-    game?.update(dt*1000, NET.getMatchTimeMS(), keyInput)
+    game?.update(dt * 1000, NET.getMatchTimeMS(), keyInput)
     accumulator += dt
     while (accumulator >= CONSTS.WORLD_UPDATE_S) {
         game?.fixedUpdate()
         accumulator -= CONSTS.WORLD_UPDATE_S
     }
     game?.interpolate(accumulator / CONSTS.WORLD_UPDATE_S)
-    
+
     keyInput.updateLastKeys()
 })
 

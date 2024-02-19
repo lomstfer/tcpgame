@@ -14,7 +14,7 @@ import { Camera } from "./camera.js"
 import * as SIMULATION from "../shared/simulation.js"
 import { stateFilter } from "./shaders.js"
 import { ExecuteDelayData } from "./executeDelayData.js"
-import { UI } from "./ui.js"
+import { GameUI } from "./gameUI.js"
 
 type gameEvents = {
     spawnUnitCommand: Vec2
@@ -28,7 +28,7 @@ export class GameInstance {
     private worldRoot: PIXI.Container
 
     private camera = new Camera()
-    private ui: UI
+    private ui: GameUI
 
     private mouseDown = false
     private mouseWorldPosition: Vec2 | undefined = undefined
@@ -56,7 +56,7 @@ export class GameInstance {
             this.camera.setPosition(new Vec2(CONSTS.START_DISTANCE, 0))
         }
 
-        this.ui = new UI(matchTime)
+        this.ui = new GameUI(matchTime)
         this.unitSelection = new UnitSelection()
         
         this.appStage = appStage
