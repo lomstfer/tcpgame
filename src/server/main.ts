@@ -13,5 +13,5 @@ handleHttp(server)
 handleWS(server)
 
 server.listen(443, () => {
-    console.log("http/ws server running on port 80")
+    console.log("http/ws server running on port 443")
 })

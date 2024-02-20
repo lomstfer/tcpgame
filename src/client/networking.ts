@@ -3,8 +3,6 @@ import * as MSG from "../shared/messageStuff.js"
 import * as MSGOBJS from "../shared/messageObjects.js"
 import mitt from "mitt" // events
 import { Vec2 } from "../shared/utils.js"
-import * as CONSTS from "../shared/constants.js"
-import * as UTILS from "../shared/utils.js"
 import { MatchData } from "../shared/matchData.js"
 import { ServerTimeSyncer } from "./serverTimeSyncer.js"
 import { Unit } from "../shared/unit.js"
@@ -23,8 +21,8 @@ type netEvents = {
     serverGameStateRespone: MSGOBJS.ServerGameStateResponse
 }
 
-export const TIME_SYNC_WAIT = 200
-export const TIME_SYNCS_TO_DO = 20
+export const TIME_SYNC_WAIT = 20
+export const TIME_SYNCS_TO_DO = 2
 
 export const netEventEmitter = mitt<netEvents>()
 
@@ -54,7 +52,6 @@ export function handleNetworking(ws: WebSocket) {
                 const sentTime = MSG.getObjectFromBytes<MSGOBJS.ServerPing>(bytes).sentFromServerTime
                 const obj = new MSGOBJS.ClientPong(sentTime)
                 ws.send(MSG.getBytesFromMessageAndObj(MSG.MessageId.clientPong, obj))
-                // console.log("time d:", serverTimeSyncer.getServerTime() - sentTime)
                 break
             }
             case MSG.MessageId.serverTimeAnswer: {
@@ -122,7 +119,7 @@ export function handleNetworking(ws: WebSocket) {
     }
 
     ws.onclose = function(event) {
-        console.log("-------------CLOSED-------------")
+        
     }
 }
 

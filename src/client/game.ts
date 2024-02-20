@@ -68,13 +68,7 @@ export class GameInstance {
             this.worldRoot.sortableChildren = true
             this.appStage.addChild(this.worldRoot)
         }
-        
-        const origo = new PIXI.Graphics()
-        origo.beginFill(0x000000)
-        origo.drawCircle(0, 0, 5)
-        origo.endFill()
-        this.worldRoot.addChild(origo)
-        
+                
         this.worldRoot.addChild(this.grid.sprite)
         this.worldRoot.addChild(this.unitSelection.sprite)
         
@@ -104,16 +98,17 @@ export class GameInstance {
             this.mouseWorldPosition = undefined
             this.mouseDown = false
         })
-        
-        /* {
-            const inventorySlots = document.getElementById("inventory-slots")
-            for (let i = 0; i < CONSTS.INVENTORY_SIZE; i++) {
-                const slot = document.createElement("div")
-                slot.classList.add("item-slot")
-                slot.id = "item-slot-" + i.toString()
-                inventorySlots?.appendChild(slot)
+        document.addEventListener('contextmenu', () => {
+            if (this.mouseWorldPosition && this.unitSelection.selectedUnits.size > 0) {
+                if (this.selfMovesLeft) {
+                    for (const u of this.unitSelection.selectedUnits) {
+                        u.yesSirAnimation()
+                    }
+                }
+                gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.getSelectedUnitsData(), this.mouseWorldPosition])
+
             }
-        } */
+        });
     }
     
     kill() {
@@ -132,17 +127,8 @@ export class GameInstance {
 
         this.unitSelection.update(this.mouseWorldPosition, this.mouseDown, this.selfUnits)
         if (this.mouseWorldPosition) {
-            if (keys.keyPressed("KeyR")) {
+            if (keys.keyPressed("Space")) {
                 gameEventEmitter.emit("spawnUnitCommand", Vec2.clampToWorld(this.mouseWorldPosition))
-            }
-
-            if (keys.keyPressed("KeyF") && this.unitSelection.selectedUnits.size > 0) {
-                if (this.selfMovesLeft) {
-                    for (const u of this.unitSelection.selectedUnits) {
-                        u.yesSirAnimation()
-                    }
-                }
-                gameEventEmitter.emit("moveUnitsCommand", [this.unitSelection.getSelectedUnitsData(), this.mouseWorldPosition])
             }
         }
 

@@ -33,9 +33,8 @@ document.addEventListener("contextmenu", (event) => {
 
 document.addEventListener('visibilitychange', function () {
     if (document.hidden) {
-        console.log('Tab is not visible')
+
     } else {
-        console.log('Tab is visible')
         NET.sendGameStateRequest(websocket)
     }
 })
@@ -45,9 +44,6 @@ const background = document.getElementById("background")
 
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
-    /* if (allow) {
-        NET.findMatch(websocket, "selfName")
-    } */
     if (findMatchForm) {
         findMatchForm.style.display = allow ? "flex" : "none"
     }
@@ -56,6 +52,7 @@ NET.netEventEmitter.on("allowFindMatch", allow => {
 let selfName = CONSTS.DEFAULT_NAME
 
 const findingMatchText = document.getElementById("finding-match-text")
+const controlsText = document.getElementById("controls-text")
 
 const findMatchButton = document.getElementById("find-match-button")
 findMatchButton?.addEventListener("click", () => {
@@ -78,12 +75,10 @@ function startFindingMatchAnimation() {
     let goingDown = false
     const interval = setInterval(() => {
         if (!findingMatchText) {
-            console.log("e")
             clearInterval(interval)
             return
         }
         if (!findingMatchText.textContent || findingMatchText.textContent == "") {
-            console.log("ee")
             clearInterval(interval)
             return
         }
@@ -177,6 +172,9 @@ function enterMatch(data: MatchData) {
 
     removeGameElements()
 
+    if (controlsText) {
+        controlsText.style.display = "none"
+    }
     if (gameUI) {
         gameUI.style.display = "initial"
     }
@@ -200,6 +198,9 @@ function enterMatch(data: MatchData) {
 function enterMenu() {
     NET.sendLeftMatch(websocket)
 
+    if (controlsText) {
+        controlsText.style.display = "initial"
+    }
     if (findMatchForm) {
         findMatchForm.style.display = "flex"
     }

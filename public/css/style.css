@@ -59,6 +59,11 @@ button:active {
     transform: scale(0.95);
 }
 
+#controls-text {
+    position: absolute;
+    color: white;
+}
+
 #finding-match-text {
     position: absolute;
     left: 50%;
