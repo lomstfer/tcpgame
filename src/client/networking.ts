@@ -23,8 +23,8 @@ type netEvents = {
     serverGameStateRespone: MSGOBJS.ServerGameStateResponse
 }
 
-export const TIME_SYNC_WAIT = 20
-export const TIME_SYNCS_TO_DO = 2
+export const TIME_SYNC_WAIT = 200
+export const TIME_SYNCS_TO_DO = 20
 
 export const netEventEmitter = mitt<netEvents>()
 
