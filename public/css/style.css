@@ -62,6 +62,8 @@ button:active {
 #controls-text {
     position: absolute;
     color: white;
+    scale: calc(var(--scale-factor) * 2);
+    transform-origin: left top;
 }
 
 #finding-match-text {
