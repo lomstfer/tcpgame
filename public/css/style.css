@@ -62,7 +62,7 @@ button:active {
 #controls-text {
     position: absolute;
     color: white;
-    scale: calc(var(--scale-factor) * 2);
+    scale: calc(var(--scale-factor) * 1.3);
     transform-origin: left top;
 }
 
