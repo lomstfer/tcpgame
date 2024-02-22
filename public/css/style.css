@@ -66,6 +66,27 @@ button:active {
     transform-origin: left top;
 }
 
+#loading-dots-parent {
+    position: absolute;
+    /* scale: calc(var(--scale-factor) * 0.5); */
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    transform-origin: top left;
+}
+
+#loading-dots {
+    font-size: 100px;
+    animation: spin 2s ease infinite;
+    color: white;
+    font-size: calc(var(--scale-size) * 5);
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    50% { transform: rotate(360deg); }
+    100% { transform: rotate(0deg); }
+}
+
 #finding-match-text {
     position: absolute;
     left: 50%;

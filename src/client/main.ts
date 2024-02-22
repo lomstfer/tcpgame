@@ -42,8 +42,13 @@ document.addEventListener('visibilitychange', function () {
 const gameUI = document.getElementById("game-ui")
 const background = document.getElementById("background")
 
+const loadingDots = document.getElementById("loading-dots-parent")
+
 const findMatchForm = document.getElementById("find-match-inputs")
 NET.netEventEmitter.on("allowFindMatch", allow => {
+    if (loadingDots) {
+        loadingDots.style.display = "none"
+    }
     if (findMatchForm) {
         findMatchForm.style.display = allow ? "flex" : "none"
     }
