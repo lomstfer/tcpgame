@@ -29,7 +29,7 @@ export function handleWS(server: Server) {
     const clientIdsToMatches = new Map<string, Match>()
 
     ws.on('connection', (newSock, r) => {
-        console.log("connection")
+        // console.log("connection")
         const clientId = SUTILS.generateRandomID();
         (newSock as any).id = clientId
 
@@ -55,7 +55,7 @@ export function handleWS(server: Server) {
                     break
                 }
                 case MSG.MessageId.clientEnterMatchFinder: {
-                    console.log("clientEnterMatchFinder")
+                    // console.log("clientEnterMatchFinder")
                     const msgObj = MSG.getObjectFromBytes<MSGOBJS.ClientEnterMatchFinder>(bytes)
                     if (msgObj == undefined) {
                         break
@@ -64,7 +64,7 @@ export function handleWS(server: Server) {
                     break
                 }
                 case MSG.MessageId.clientRematch: {
-                    console.log(clientId, "rematch!")
+                    // console.log(clientId, "rematch!")
                     const match = clientIdsToMatches.get(clientId)
                     if (match) {
                         match.setWantsToRematch(clientId)
@@ -73,7 +73,7 @@ export function handleWS(server: Server) {
                         }
                     }
                     else {
-                        console.log("match already closed")
+                        // console.log("match already closed")
                     }
                     break
                 }
@@ -101,7 +101,7 @@ export function handleWS(server: Server) {
                 clientIdsToMatches.delete(clientMatch.client1Socket.id)
                 clientIdsToMatches.delete(clientMatch.client2Socket.id)
             }
-            console.log("closed " + clientId)
+            // console.log("closed " + clientId)
         })
     })
 

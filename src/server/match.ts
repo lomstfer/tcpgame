@@ -211,13 +211,13 @@ export class Match {
 
     disconnectClient(id: string) {
         if (id == this.client1Socket.id) {
-            console.log(this.client1Info.name, "disconnected")
+            // console.log(this.client1Info.name, "disconnected")
             this.client2Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
             if (this.matchEnded == false)
                 this.endMatchWithWinner(this.client2Socket.id)
         }
         else if (id == this.client2Socket.id) {
-            console.log(this.client2Info.name, "disconnected")
+            // console.log(this.client2Info.name, "disconnected")
             this.client1Socket.socket.send(MSG.getByteFromMessage(MSG.MessageId.serverOpponentDisconnected))
             if (this.matchEnded == false)
                 this.endMatchWithWinner(this.client1Socket.id)

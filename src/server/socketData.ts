@@ -15,7 +15,6 @@ export class SocketData {
 
     handleClientPong(sentTime: number, currentServerTime: number) {
         const ping = currentServerTime - sentTime
-        // this.ping = ping
         this.latestPings.push(ping)
         if (this.latestPings.length > 5) {
             this.latestPings.splice(0, 1)

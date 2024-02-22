@@ -48,12 +48,12 @@ export class GameInstance {
         if (matchData.team) {
             COLORS.setSelfColor(COLORS.PLAYER_1)
             COLORS.setOtherColor(COLORS.PLAYER_2)
-            this.camera.setPosition(new Vec2(-CONSTS.START_DISTANCE, 0))
+            // this.camera.setPosition(new Vec2(-CONSTS.START_DISTANCE, 0))
         }
         else {
             COLORS.setSelfColor(COLORS.PLAYER_2)
             COLORS.setOtherColor(COLORS.PLAYER_1)
-            this.camera.setPosition(new Vec2(CONSTS.START_DISTANCE, 0))
+            // this.camera.setPosition(new Vec2(CONSTS.START_DISTANCE, 0))
         }
 
         this.ui = new GameUI(matchTime)

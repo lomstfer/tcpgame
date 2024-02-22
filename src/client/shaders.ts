@@ -18,6 +18,8 @@ export const gridFragShader = `
                     
         vec3 grid = vec3(1.0, 1.0, 1.0);
         vec4 color = vec4(0.0);
+        
+        float alpha = 0.5;
 
         if (worldPos.x >= uWorldSize.x-3.0+uGridSquareSize || worldPos.x <= -uWorldSize.x+3.0 || 
             worldPos.y >= uWorldSize.y-3.0+uGridSquareSize || worldPos.y <= -uWorldSize.y+3.0
@@ -25,12 +27,27 @@ export const gridFragShader = `
             gl_FragColor = color;
             return;
         }
+        else if (worldPos.x <= -uWorldSize.x+20.0) {
+            float d = abs(worldPos.x - (-uWorldSize.x));
+            alpha *= d / (20.0);
+        }
+        else if (worldPos.x >= uWorldSize.x-20.0+uGridSquareSize) {
+            float d = abs(worldPos.x - (uWorldSize.x+uGridSquareSize));
+            alpha *= d / (20.0);
+        }
+        else if (worldPos.y <= -uWorldSize.y+20.0) {
+            float d = abs(worldPos.y - (-uWorldSize.y));
+            alpha *= d / (20.0);
+        }
+        else if (worldPos.y >= uWorldSize.y-20.0+uGridSquareSize) {
+            float d = abs(worldPos.y - (uWorldSize.y+uGridSquareSize));
+            alpha *= d / (20.0);
+        }
 
         vec2 b = worldPos / uGridSquareSize;
         
         float t = 0.0;
         float lineSize = 2.0 / uGridSquareSize;
-        float alpha = 0.5;
         
         float xx = abs(b.x - floor(0.5 + b.x));
         float yy = abs(b.y - floor(0.5 + b.y));
@@ -51,7 +68,7 @@ export const gridFragShader = `
             }
         }
 
-        color = vec4(0.0, 0.0, 0.0, t * alpha);
+        color.a = t * alpha;
         // if (t != 0.0) {
         //     color.x += (sin(b.y / 5.0) + 1.0) * 0.5;
         //     // color.y += (cos(b.x / 5.0) + 1.0) * 0.5;
