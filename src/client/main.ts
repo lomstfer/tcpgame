@@ -142,7 +142,7 @@ function endMatch(won: boolean) {
     pixiApp.stop()
     if (matchEndedScreen) {
         if (matchEndedScreenResult) {
-            matchEndedScreenResult.textContent = won ? "WINNER" : "LOOSER"
+            matchEndedScreenResult.textContent = won ? "WINNER" : "LOSER"
         }
 
         matchEndedScreen.style.display = "flex"
@@ -230,6 +230,9 @@ function enterMenu() {
 document.body.appendChild(pixiApp.view)
 
 // pixiApp.stage.filters = []
+if (matchTime) {
+    matchTime.style.setProperty("--max-width", "0")
+}
 
 const keyInput = new KeyInput()
 let accumulator = 0
@@ -243,7 +246,18 @@ pixiApp.ticker.add(() => {
         let minutes = Math.floor(seconds / 60)
         seconds = seconds % 60
         milliseconds = milliseconds % 1000
-        matchTime.textContent = `${minutes}:${seconds}:${Math.floor(milliseconds / 100)}`
+        const minutesString = minutes.toString().padStart(1, "0")
+        const secondsString = seconds.toString().padStart(2, "0")
+        matchTime.textContent = `${minutesString}:${secondsString}`
+
+        const scaleFactor = (window.innerWidth + window.innerHeight) / 3000
+        const maxWidth = matchTime.style.getPropertyValue("--max-width")
+        if (matchTime.clientWidth / scaleFactor > +maxWidth) {
+            matchTime.style.setProperty("--max-width", (matchTime.clientWidth / scaleFactor).toString())
+            if (matchTime.parentElement) {
+                matchTime.parentElement.style.width = (matchTime.clientWidth + "px").toString()
+            }
+        }
     }
 
     game?.update(dt * 1000, NET.getMatchTimeMS(), keyInput)
