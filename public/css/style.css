@@ -104,8 +104,10 @@ button:active {
     position: absolute;
     top: 0;
     right: 0;
-    width: 0px;
+    --more-width: 0px;
+    width: calc(var(--scale-factor) * var(--more-width) + var(--scale-factor) * 5px);
     height: calc(var(--scale-factor) * 60px);
+    /* margin-right: calc(var(--scale-factor) * 5px); */
     font-size: calc(var(--scale-size) * 3);
     display: flex;
     align-items: end;

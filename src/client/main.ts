@@ -255,7 +255,7 @@ pixiApp.ticker.add(() => {
         if (matchTime.clientWidth / scaleFactor > +maxWidth) {
             matchTime.style.setProperty("--max-width", (matchTime.clientWidth / scaleFactor).toString())
             if (matchTime.parentElement) {
-                matchTime.parentElement.style.width = (matchTime.clientWidth + "px").toString()
+                matchTime.parentElement.style.setProperty("--more-width", ((matchTime.clientWidth / scaleFactor)).toString() + "px")
             }
         }
     }
